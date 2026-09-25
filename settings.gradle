@@ -9,7 +9,7 @@ pluginManagement {
 
 plugins {
     // Auto-provisions JDK toolchains (e.g. Java 16 for run tasks) if they are not installed
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.10.0'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
 rootProject.name = 'voicechat'
