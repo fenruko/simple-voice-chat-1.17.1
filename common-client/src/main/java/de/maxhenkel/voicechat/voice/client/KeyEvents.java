@@ -13,16 +13,15 @@ import de.maxhenkel.voicechat.intercompatibility.ClientCompatibilityManager;
 import de.maxhenkel.voicechat.voice.common.ClientGroup;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import org.lwjgl.sdl.SDLScancode;
+import net.minecraft.network.chat.TranslatableComponent;
+import org.lwjgl.glfw.GLFW;
 
 public class KeyEvents {
 
     private final Minecraft minecraft;
 
-    public static KeyMapping.Category CATEGORY_VOICECHAT;
     public static KeyMapping KEY_PTT;
     public static KeyMapping KEY_WHISPER;
     public static KeyMapping KEY_MUTE;
@@ -39,25 +38,17 @@ public class KeyEvents {
     public KeyEvents() {
         minecraft = Minecraft.getInstance();
         ClientCompatibilityManager.INSTANCE.onHandleKeyBinds(this::handleKeybinds);
-    }
 
-    public static void registerKeyBinds() {
-        if (KEY_PTT != null) {
-            throw new IllegalStateException("Registered key binds twice");
-        }
-
-        CATEGORY_VOICECHAT = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(Voicechat.MODID, "voicechat"));
-
-        KEY_PTT = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.push_to_talk", InputConstants.UNKNOWN.getValue(), CATEGORY_VOICECHAT));
-        KEY_WHISPER = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.whisper", InputConstants.UNKNOWN.getValue(), CATEGORY_VOICECHAT));
-        KEY_MUTE = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.mute_microphone", SDLScancode.SDL_SCANCODE_M, CATEGORY_VOICECHAT));
-        KEY_DISABLE = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.disable_voice_chat", SDLScancode.SDL_SCANCODE_N, CATEGORY_VOICECHAT));
-        KEY_HIDE_ICONS = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.hide_icons", SDLScancode.SDL_SCANCODE_H, CATEGORY_VOICECHAT));
-        KEY_VOICE_CHAT = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat", SDLScancode.SDL_SCANCODE_V, CATEGORY_VOICECHAT));
-        KEY_VOICE_CHAT_SETTINGS = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat_settings", InputConstants.UNKNOWN.getValue(), CATEGORY_VOICECHAT));
-        KEY_GROUP = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat_group", InputConstants.UNKNOWN.getValue(), CATEGORY_VOICECHAT));
-        KEY_TOGGLE_RECORDING = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat_toggle_recording", InputConstants.UNKNOWN.getValue(), CATEGORY_VOICECHAT));
-        KEY_ADJUST_VOLUMES = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat_adjust_volumes", InputConstants.UNKNOWN.getValue(), CATEGORY_VOICECHAT));
+        KEY_PTT = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.push_to_talk", InputConstants.UNKNOWN.getValue(), "key.categories.voicechat"));
+        KEY_WHISPER = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.whisper", InputConstants.UNKNOWN.getValue(), "key.categories.voicechat"));
+        KEY_MUTE = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.mute_microphone", GLFW.GLFW_KEY_M, "key.categories.voicechat"));
+        KEY_DISABLE = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.disable_voice_chat", GLFW.GLFW_KEY_N, "key.categories.voicechat"));
+        KEY_HIDE_ICONS = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.hide_icons", GLFW.GLFW_KEY_H, "key.categories.voicechat"));
+        KEY_VOICE_CHAT = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat", GLFW.GLFW_KEY_V, "key.categories.voicechat"));
+        KEY_VOICE_CHAT_SETTINGS = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat_settings", InputConstants.UNKNOWN.getValue(), "key.categories.voicechat"));
+        KEY_GROUP = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat_group", GLFW.GLFW_KEY_G, "key.categories.voicechat"));
+        KEY_TOGGLE_RECORDING = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat_toggle_recording", InputConstants.UNKNOWN.getValue(), "key.categories.voicechat"));
+        KEY_ADJUST_VOLUMES = ClientCompatibilityManager.INSTANCE.registerKeyBinding(new KeyMapping("key.voice_chat_adjust_volumes", InputConstants.UNKNOWN.getValue(), "key.categories.voicechat"));
 
         ALL_KEYS = new KeyMapping[]{
                 KEY_PTT, KEY_WHISPER, KEY_MUTE, KEY_DISABLE, KEY_HIDE_ICONS, KEY_VOICE_CHAT, KEY_VOICE_CHAT_SETTINGS, KEY_GROUP, KEY_TOGGLE_RECORDING, KEY_ADJUST_VOLUMES
@@ -82,15 +73,15 @@ public class KeyEvents {
         ClientVoicechat client = ClientManager.getClient();
         ClientPlayerStateManager playerStateManager = ClientManager.getPlayerStateManager();
         if (KEY_VOICE_CHAT.consumeClick()) {
-            if (minecraft.hasAltDown()) {
-                if (minecraft.hasControlDown()) {
+            if (Screen.hasAltDown()) {
+                if (Screen.hasControlDown()) {
                     VoicechatClient.CLIENT_CONFIG.onboardingFinished.set(false).save();
-                    player.sendOverlayMessage(Component.translatable("message.voicechat.onboarding.reset"));
+                    player.displayClientMessage(new TranslatableComponent("message.voicechat.onboarding.reset"), true);
                 } else {
                     ClientManager.getDebugOverlay().toggle();
                 }
             } else {
-                minecraft.gui.setScreen(new VoiceChatScreen());
+                minecraft.setScreen(new VoiceChatScreen());
             }
         }
 
@@ -98,21 +89,21 @@ public class KeyEvents {
             if (client != null && client.getConnection() != null && client.getConnection().getData().groupsEnabled()) {
                 ClientGroup group = playerStateManager.getGroup();
                 if (group != null) {
-                    minecraft.gui.setScreen(new GroupScreen(group));
+                    minecraft.setScreen(new GroupScreen(group));
                 } else {
-                    minecraft.gui.setScreen(new JoinGroupScreen());
+                    minecraft.setScreen(new JoinGroupScreen());
                 }
             } else {
-                player.sendOverlayMessage(Component.translatable("message.voicechat.groups_disabled"));
+                player.displayClientMessage(new TranslatableComponent("message.voicechat.groups_disabled"), true);
             }
         }
 
         if (KEY_VOICE_CHAT_SETTINGS.consumeClick()) {
-            minecraft.gui.setScreen(new VoiceChatSettingsScreen());
+            minecraft.setScreen(new VoiceChatSettingsScreen());
         }
 
         if (KEY_ADJUST_VOLUMES.consumeClick()) {
-            minecraft.gui.setScreen(new AdjustVolumesScreen());
+            minecraft.setScreen(new AdjustVolumesScreen());
         }
 
         if (KEY_PTT.consumeClick()) {
@@ -140,9 +131,9 @@ public class KeyEvents {
             VoicechatClient.CLIENT_CONFIG.hideIcons.set(hidden).save();
 
             if (hidden) {
-                player.sendOverlayMessage(Component.translatable("message.voicechat.icons_hidden"));
+                player.displayClientMessage(new TranslatableComponent("message.voicechat.icons_hidden"), true);
             } else {
-                player.sendOverlayMessage(Component.translatable("message.voicechat.icons_visible"));
+                player.displayClientMessage(new TranslatableComponent("message.voicechat.icons_visible"), true);
             }
         }
     }
@@ -161,7 +152,7 @@ public class KeyEvents {
             Voicechat.LOGGER.warn("Voice chat not connected");
             return;
         }
-        player.sendOverlayMessage(Component.translatable("message.voicechat.voice_chat_not_connected"));
+        player.displayClientMessage(new TranslatableComponent("message.voicechat.voice_chat_not_connected"), true);
     }
 
 }

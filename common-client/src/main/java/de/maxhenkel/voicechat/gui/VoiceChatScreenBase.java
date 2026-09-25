@@ -1,9 +1,9 @@
 package de.maxhenkel.voicechat.gui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 
 import javax.annotation.Nullable;
@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 public abstract class VoiceChatScreenBase extends Screen {
 
-    public static final int FONT_COLOR = -12566464;
+    public static final int FONT_COLOR = 4210752;
 
     protected List<HoverArea> hoverAreas;
     protected int guiLeft;
@@ -38,17 +38,18 @@ public abstract class VoiceChatScreenBase extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
-        extractBackgroundRenderState(guiGraphics, mouseX, mouseY, delta);
-        super.extractRenderState(guiGraphics, mouseX, mouseY, delta);
-        extractForegroundRenderState(guiGraphics, mouseX, mouseY, delta);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        renderBackground(poseStack);
+        renderBackground(poseStack, mouseX, mouseY, delta);
+        super.render(poseStack, mouseX, mouseY, delta);
+        renderForeground(poseStack, mouseX, mouseY, delta);
     }
 
-    public void extractBackgroundRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
+    public void renderBackground(PoseStack poseStack, int mouseX, int mouseY, float delta) {
 
     }
 
-    public void extractForegroundRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
+    public void renderForeground(PoseStack poseStack, int mouseX, int mouseY, float delta) {
 
     }
 
@@ -65,13 +66,13 @@ public abstract class VoiceChatScreenBase extends Screen {
     }
 
     protected int getFontColor() {
-        return isIngame() ? FONT_COLOR : TextColor.WHITE.getValue();
+        return isIngame() ? FONT_COLOR : ChatFormatting.WHITE.getColor();
     }
 
-    public void drawHoverAreas(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY) {
+    public void drawHoverAreas(PoseStack matrixStack, int mouseX, int mouseY) {
         for (HoverArea hoverArea : hoverAreas) {
             if (hoverArea.tooltip != null && hoverArea.isHovered(guiLeft, guiTop, mouseX, mouseY)) {
-                guiGraphics.setTooltipForNextFrame(minecraft.font, hoverArea.tooltip.get(), mouseX - guiLeft, mouseY - guiTop);
+                renderTooltip(matrixStack, hoverArea.tooltip.get(), mouseX - guiLeft, mouseY - guiTop);
             }
         }
     }

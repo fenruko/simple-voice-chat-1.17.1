@@ -1,5 +1,6 @@
 package de.maxhenkel.voicechat.voice.client.speaker;
 
+import com.mojang.math.Vector3f;
 import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.VoicechatClient;
 import de.maxhenkel.voicechat.api.events.OpenALSoundEvent;
@@ -10,7 +11,6 @@ import de.maxhenkel.voicechat.voice.client.ClientUtils;
 import de.maxhenkel.voicechat.voice.client.SoundManager;
 import de.maxhenkel.voicechat.voice.common.NamedThreadPoolFactory;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3fc;
 import org.lwjgl.openal.AL11;
 
 import javax.annotation.Nullable;
@@ -160,8 +160,8 @@ public abstract class ALSpeakerBase implements Speaker {
     protected void setPositionSync(@Nullable Vec3 soundPos, float maxDistance) {
         CameraState camera = ClientManager.getCameraState();
         Vec3 position = camera.position();
-        Vector3fc look = camera.forward();
-        Vector3fc up = camera.up();
+        Vector3f look = camera.forward();
+        Vector3f up = camera.up();
         AL11.alListener3f(AL11.AL_POSITION, (float) position.x, (float) position.y, (float) position.z);
         SoundManager.checkAlError();
         AL11.alListenerfv(AL11.AL_ORIENTATION, new float[]{look.x(), look.y(), look.z(), up.x(), up.y(), up.z()});

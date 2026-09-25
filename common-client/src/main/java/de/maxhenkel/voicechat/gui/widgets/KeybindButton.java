@@ -4,14 +4,11 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.input.InputWithModifiers;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextComponent;
 
 import javax.annotation.Nullable;
 
@@ -25,7 +22,7 @@ public class KeybindButton extends AbstractButton {
     protected boolean listening;
 
     public KeybindButton(KeyMapping mapping, int x, int y, int width, int height, @Nullable Component description) {
-        super(x, y, width, height, Component.empty());
+        super(x, y, width, height, new TextComponent(""));
         this.keyMapping = mapping;
         this.description = description;
         updateText();
@@ -38,7 +35,7 @@ public class KeybindButton extends AbstractButton {
     protected void updateText() {
         MutableComponent text;
         if (listening) {
-            text = Component.literal("> ").append(getText(keyMapping).copy().withStyle(ChatFormatting.WHITE, ChatFormatting.UNDERLINE)).append(" <").withStyle(ChatFormatting.YELLOW);
+            text = new TextComponent("> ").append(getText(keyMapping).copy().withStyle(ChatFormatting.WHITE, ChatFormatting.UNDERLINE)).append(" <").withStyle(ChatFormatting.YELLOW);
         } else {
             text = getText(keyMapping).copy();
         }
@@ -54,64 +51,59 @@ public class KeybindButton extends AbstractButton {
         return keyMapping.getTranslatedKeyMessage();
     }
 
+    public boolean isHovered() {
+        return isHovered;
+    }
+
     @Override
-    public void onPress(InputWithModifiers inputWithModifiers) {
+    public void onPress() {
         listening = true;
         updateText();
     }
 
     @Override
-    protected void extractContents(GuiGraphicsExtractor guiGraphics, int i, int j, float f) {
-        extractDefaultSprite(guiGraphics);
-        extractDefaultLabel(guiGraphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
-    }
-
-    @Override
-    public boolean mouseClicked(MouseButtonEvent evt, boolean bl) {
+    public boolean mouseClicked(double x, double y, int button) {
         if (listening) {
-            if (evt.button() == 0) {
+            if (button == 0) {
                 // Don't allow left click when accidentally clicking the button twice
                 listening = false;
                 updateText();
-                return isMouseOver(evt.x(), evt.y());
+                return false;
             }
-            keyMapping.setKey(InputConstants.Type.MOUSE.getOrCreate(evt.button()));
-            KeyMapping.resetMapping();
-            mc.options.save();
+            mc.options.setKey(keyMapping, InputConstants.Type.MOUSE.getOrCreate(button));
             listening = false;
             updateText();
             return true;
         }
-        return super.mouseClicked(evt, bl);
+        return super.mouseClicked(x, y, button);
+
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
+    public boolean keyPressed(int key, int scanCode, int modifiers) {
         if (listening) {
-            if (keyEvent.isEscape()) {
-                keyMapping.setKey(InputConstants.UNKNOWN);
+            if (key == InputConstants.KEY_ESCAPE) {
+                mc.options.setKey(keyMapping, InputConstants.UNKNOWN);
             } else {
-                keyMapping.setKey(InputConstants.getKey(keyEvent));
+                mc.options.setKey(keyMapping, InputConstants.getKey(key, scanCode));
             }
-            KeyMapping.resetMapping();
-            mc.options.save();
             listening = false;
             updateText();
             return true;
         }
-        return super.keyPressed(keyEvent);
+        return super.keyPressed(key, scanCode, modifiers);
     }
 
     @Override
-    public boolean keyReleased(KeyEvent keyEvent) {
-        if (listening && keyEvent.isEscape()) {
+    public boolean keyReleased(int key, int scanCode, int modifiers) {
+        if (listening && key == InputConstants.KEY_ESCAPE) {
             return true;
         }
-        return super.keyReleased(keyEvent);
+        return super.keyReleased(key, scanCode, modifiers);
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    public void updateNarration(NarrationElementOutput narrationElementOutput) {
 
     }
 

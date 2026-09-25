@@ -1,18 +1,19 @@
 package de.maxhenkel.voicechat.gui.onboarding;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.gui.widgets.*;
 import de.maxhenkel.voicechat.natives.SpeexManager;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 
 public class VoiceActivationOnboardingScreen extends OnboardingScreenBase {
 
-    private static final Component TITLE = Component.translatable("message.voicechat.onboarding.voice.title").withStyle(ChatFormatting.BOLD);
-    private static final Component DESCRIPTION = Component.translatable("message.voicechat.onboarding.voice.description");
+    private static final Component TITLE = new TranslatableComponent("message.voicechat.onboarding.voice.title").withStyle(ChatFormatting.BOLD);
+    private static final Component DESCRIPTION = new TranslatableComponent("message.voicechat.onboarding.voice.description");
 
     protected VoiceActivationSlider slider;
     protected MicTestButton micTestButton;
@@ -29,9 +30,9 @@ public class VoiceActivationOnboardingScreen extends OnboardingScreenBase {
         int space = BUTTON_HEIGHT + SMALL_PADDING;
 
         boolean agc = SpeexManager.canUseAgc();
-        MicAmplificationSlider micAmp = new MicAmplificationSlider(guiLeft + (agc ? 80 + 1 : 0), bottom - space * 3, contentWidth - (agc ? 80 : 0) - 1, BUTTON_HEIGHT);
+        MicAmplificationSlider micAmp = new MicAmplificationSlider(this, guiLeft + (agc ? 80 + 1 : 0), bottom - space * 3, contentWidth - (agc ? 80 : 0) - 1, BUTTON_HEIGHT);
         if (agc) {
-            addRenderableWidget(new AgcButton(guiLeft, bottom - space * 3, 80, BUTTON_HEIGHT, active -> micAmp.setActive(!active)));
+            addRenderableWidget(new AgcButton(this, guiLeft, bottom - space * 3, 80, BUTTON_HEIGHT, active -> micAmp.setActive(!active)));
         }
         addRenderableWidget(micAmp);
         addRenderableWidget(new DenoiserButton(guiLeft, bottom - space * 2, contentWidth, BUTTON_HEIGHT));
@@ -52,15 +53,17 @@ public class VoiceActivationOnboardingScreen extends OnboardingScreenBase {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
-        renderTitle(guiGraphics, TITLE);
-        renderMultilineText(guiGraphics, DESCRIPTION);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        super.render(poseStack, mouseX, mouseY, partialTicks);
+
+        renderTitle(poseStack, TITLE);
+        renderMultilineText(poseStack, DESCRIPTION);
 
         Component sliderTooltip = slider.getHoverText();
         if (slider.isHovered() && sliderTooltip != null) {
-            guiGraphics.setTooltipForNextFrame(font, sliderTooltip, mouseX, mouseY);
+            renderTooltip(poseStack, sliderTooltip, mouseX, mouseY);
+        } else if (micTestButton.isHovered()) {
+            micTestButton.onTooltip(micTestButton, poseStack, mouseX, mouseY);
         }
     }
-
 }

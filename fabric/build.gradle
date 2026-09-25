@@ -1,4 +1,4 @@
-apply plugin: 'net.fabricmc.fabric-loom'
+apply plugin: 'fabric-loom'
 apply plugin: 'com.gradleup.shadow'
 apply plugin: 'de.maxhenkel.cursegradle'
 apply plugin: 'com.modrinth.minotaur'
@@ -31,14 +31,21 @@ dependencies {
 
     implementation(include(project(':fabric:api-stub')))
 
-    compileOnly "com.terraformersmc:modmenu:${modmenu_version}"
-    compileOnlyApi("me.shedaniel.cloth:cloth-config-fabric:${cloth_config_version}") {
+    modImplementation "com.terraformersmc:modmenu:${modmenu_version}"
+
+    modApi("me.shedaniel.cloth:cloth-config-fabric:${cloth_config_version}") {
         exclude(group: 'net.fabricmc.fabric-api')
     }
-    compileOnly "maven.modrinth:vanish:${vanish_version}"
+    modCompileOnly "maven.modrinth:vanish:${vanish_version}"
 
-    implementation "me.lucko:fabric-permissions-api:${fabric_permission_api_version}"
-    compileOnly "com.viaversion:viaversion-common:${viaversion_version}"
+    // The permissions API POM imports fabric-api-bom (1.21.3-era) and a plain
+    // fabric-loader; the platform constraints would upgrade every fabric-api module
+    // and break dev-run mod resolution on 1.17.1. Keep only the API classes.
+    modImplementation("me.lucko:fabric-permissions-api:${fabric_permission_api_version}") {
+        exclude group: 'net.fabricmc.fabric-api'
+        exclude group: 'net.fabricmc', module: 'fabric-loader'
+    }
+    modCompileOnly "com.viaversion:viaversion-common:${viaversion_version}"
 
     implementation "org.concentus:Concentus:${concentus_version}"
     shadow "org.concentus:Concentus:${concentus_version}"
@@ -70,5 +77,28 @@ compileJava.dependsOn generateJava
 
 shadowJar {
     relocate 'org.concentus', 'de.maxhenkel.voicechat.concentus'
-    exclude 'natives/*-x86/*'
+}
+
+// fabric-permissions-api's POM drags a plain fabric-loader onto the runtime
+// classpath next to Loom's remapped copy, which makes Fabric Loader abort with
+// "duplicate fabric loader classes found on classpath". Only keep the remapped one.
+configurations.named('runtimeClasspath') {
+    exclude group: 'net.fabricmc', module: 'fabric-loader'
+}
+// Fabric Loader needs access-widener at runtime (MinecraftGameProvider); it was
+// previously supplied by the excluded plain loader tree.
+dependencies {
+    runtimeOnly "net.fabricmc:access-widener:2.1.0"
+}
+
+// This is to make the run tasks use Java 17, since Minecraft 1.18 does not run on newer versions
+tasks.named("runClient", JavaExec).configure {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(java_version)
+    }
+}
+tasks.named("runServer", JavaExec).configure {
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(java_version)
+    }
 }

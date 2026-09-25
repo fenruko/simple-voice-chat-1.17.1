@@ -6,6 +6,7 @@ import de.maxhenkel.voicechat.api.opus.OpusEncoder;
 import de.maxhenkel.voicechat.config.ServerConfig;
 import de.maxhenkel.voicechat.debug.VoicechatUncaughtExceptionHandler;
 import de.maxhenkel.voicechat.plugins.ClientPluginManager;
+import de.maxhenkel.voicechat.plugins.PluginManager;
 import de.maxhenkel.voicechat.natives.OpusManager;
 import de.maxhenkel.voicechat.voice.client.microphone.Microphone;
 import de.maxhenkel.voicechat.voice.client.microphone.MicrophoneManager;
@@ -170,7 +171,7 @@ public class MicThread extends Thread {
         if (recorder == null) {
             return;
         }
-        recorder.flushChunkThreaded(Minecraft.getInstance().getUser().getProfileId());
+        recorder.flushChunkThreaded(Minecraft.getInstance().getUser().getGameProfile().getId());
     }
 
     private boolean hasSentAudio;
@@ -262,7 +263,7 @@ public class MicThread extends Thread {
         }
         try {
             if (client != null && client.getRecorder() != null) {
-                client.getRecorder().appendChunk(Minecraft.getInstance().getUser().getProfileId(), System.currentTimeMillis(), PositionalAudioUtils.convertToStereo(audio));
+                client.getRecorder().appendChunk(Minecraft.getInstance().getUser().getGameProfile().getId(), System.currentTimeMillis(), PositionalAudioUtils.convertToStereo(audio));
             }
         } catch (IOException e) {
             Voicechat.LOGGER.error("Failed to record audio", e);

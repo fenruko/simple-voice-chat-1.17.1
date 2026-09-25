@@ -10,7 +10,7 @@ import de.maxhenkel.voicechat.intercompatibility.CommonCompatibilityManager;
 import de.maxhenkel.voicechat.permission.PermissionManager;
 import de.maxhenkel.voicechat.plugins.PluginManager;
 import de.maxhenkel.voicechat.voice.common.*;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -155,7 +155,7 @@ public class Server extends Thread {
 
         if (bindAddress.trim().equals("*")) {
             bindAddress = "";
-        } else if (bindAddress.trim().equals("")) {
+        } else if (bindAddress.trim().isEmpty()) {
             if (server instanceof DedicatedServer) {
                 bindAddress = ((DedicatedServer) server).getProperties().serverIp;
                 if (!bindAddress.trim().isEmpty()) {
@@ -359,7 +359,7 @@ public class Server extends Thread {
         }
         if (!PermissionManager.INSTANCE.SPEAK_PERMISSION.hasPermission(player)) {
             CooldownTimer.run("no-speak-" + playerUuid, 30_000L, () -> {
-                player.sendOverlayMessage(Component.translatable("message.voicechat.no_speak_permission"));
+                player.displayClientMessage(new TranslatableComponent("message.voicechat.no_speak_permission"), true);
             });
             return;
         }
@@ -446,7 +446,7 @@ public class Server extends Thread {
             source = SoundPacketEvent.SOURCE_PROXIMITY;
         }
 
-        broadcast(ServerPlayerManager.getPlayersInRange(sender.level(), sender.position(), getBroadcastRange(distance), p -> !p.getUUID().equals(sender.getUUID())), soundPacket, sender, senderState, groupId, source);
+        broadcast(ServerPlayerManager.getPlayersInRange(sender.getLevel(), sender.position(), getBroadcastRange(distance), p -> !p.getUUID().equals(sender.getUUID())), soundPacket, sender, senderState, groupId, source);
     }
 
     public void sendSoundPacket(@Nullable ServerPlayer sender, @Nullable PlayerState senderState, ServerPlayer receiver, PlayerState receiverState, @Nullable ClientConnection connection, SoundPacket<?> soundPacket, String source) {
@@ -466,7 +466,7 @@ public class Server extends Thread {
 
         if (!PermissionManager.INSTANCE.LISTEN_PERMISSION.hasPermission(receiver)) {
             CooldownTimer.run(String.format("no-listen-%s", receiver.getUUID()), 30_000L, () -> {
-                receiver.sendOverlayMessage(Component.translatable("message.voicechat.no_listen_permission"));
+                receiver.displayClientMessage(new TranslatableComponent("message.voicechat.no_listen_permission"), true);
             });
             return;
         }
@@ -593,14 +593,6 @@ public class Server extends Thread {
      */
     public void sendPacketRaw(Packet<?> packet, ClientConnection connection) throws Exception {
         connection.send(this, new NetworkMessage(packet));
-    }
-
-    public void addUncheckedPlayerConnection(UUID uuid, ClientConnection connection) {
-        unCheckedConnections.put(uuid, connection);
-    }
-
-    public void addRawPacket(RawUdpPacket rawUdpPacket) {
-        packetQueue.add(rawUdpPacket);
     }
 
     public PingManager getPingManager() {

@@ -7,14 +7,12 @@ import de.maxhenkel.voicechat.plugins.impl.VoicechatClientApiImpl;
 import de.maxhenkel.voicechat.service.Service;
 import de.maxhenkel.voicechat.voice.client.ClientVoicechatConnection;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonInfo;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.entity.state.EntityRenderState;
-import net.minecraft.client.renderer.state.level.CameraRenderState;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.Connection;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.RepositorySource;
+import net.minecraft.world.entity.Entity;
 
 import java.net.SocketAddress;
 import java.util.function.Consumer;
@@ -59,26 +57,26 @@ public abstract class ClientCompatibilityManager {
 
     public abstract SocketAddress getSocketAddress(Connection connection);
 
-    public abstract void addResourcePackSource(RepositorySource repositorySource);
+    public abstract void addResourcePackSource(PackRepository packRepository, RepositorySource repositorySource);
 
     public VoicechatClientApi getClientApi() {
         return VoicechatClientApiImpl.INSTANCE;
     }
 
     public interface RenderNameplateEvent {
-        void render(EntityRenderState renderState, CameraRenderState cameraRenderState, PoseStack stack, SubmitNodeCollector collector);
+        void render(Entity entity, Component component, PoseStack stack, MultiBufferSource bufferSource, int light);
     }
 
     public interface RenderHUDEvent {
-        void render(GuiGraphicsExtractor guiGraphics, float tickDelta);
+        void render(PoseStack stack, float tickDelta);
     }
 
     public interface KeyboardEvent {
-        void onKeyboardEvent(KeyEvent keyEvent);
+        void onKeyboardEvent(long window, int key, int scancode);
     }
 
     public interface MouseEvent {
-        void onMouseEvent(MouseButtonInfo mouseButtonInfo, int action);
+        void onMouseEvent(long window, int button, int action, int mods);
     }
 
 }

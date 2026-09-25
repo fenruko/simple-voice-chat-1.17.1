@@ -1,24 +1,23 @@
 package de.maxhenkel.voicechat.events;
 
 import de.maxhenkel.voicechat.intercompatibility.ClientCompatibilityManager;
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
+import org.quiltmc.qsl.base.api.event.Event;
 
 public class InputEvents {
 
-    public static final Event<ClientCompatibilityManager.KeyboardEvent> KEYBOARD_KEY = EventFactory.createArrayBacked(ClientCompatibilityManager.KeyboardEvent.class, (listeners) -> (keyEvent) -> {
+    public static final Event<ClientCompatibilityManager.KeyboardEvent> KEYBOARD_KEY = Event.create(ClientCompatibilityManager.KeyboardEvent.class, (listeners) -> (window, key, scancode) -> {
         for (ClientCompatibilityManager.KeyboardEvent event : listeners) {
-            event.onKeyboardEvent(keyEvent);
+            event.onKeyboardEvent(window, key, scancode);
         }
     });
 
-    public static final Event<ClientCompatibilityManager.MouseEvent> MOUSE_KEY = EventFactory.createArrayBacked(ClientCompatibilityManager.MouseEvent.class, (listeners) -> (mouseButtonInfo, action) -> {
+    public static final Event<ClientCompatibilityManager.MouseEvent> MOUSE_KEY = Event.create(ClientCompatibilityManager.MouseEvent.class, (listeners) -> (window, button, action, mods) -> {
         for (ClientCompatibilityManager.MouseEvent event : listeners) {
-            event.onMouseEvent(mouseButtonInfo, action);
+            event.onMouseEvent(window, button, action, mods);
         }
     });
 
-    public static final Event<Runnable> HANDLE_KEYBINDS = EventFactory.createArrayBacked(Runnable.class, (listeners) -> () -> {
+    public static final Event<Runnable> HANDLE_KEYBINDS = Event.create(Runnable.class, (listeners) -> () -> {
         for (Runnable event : listeners) {
             event.run();
         }

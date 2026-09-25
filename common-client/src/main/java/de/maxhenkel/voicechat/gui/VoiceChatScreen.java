@@ -1,5 +1,7 @@
 package de.maxhenkel.voicechat.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.VoicechatClient;
 import de.maxhenkel.voicechat.gui.group.GroupScreen;
@@ -15,29 +17,28 @@ import de.maxhenkel.voicechat.intercompatibility.ClientCompatibilityManager;
 import de.maxhenkel.voicechat.voice.client.*;
 import de.maxhenkel.voicechat.voice.common.ClientGroup;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
 
 public class VoiceChatScreen extends VoiceChatScreenBase {
 
-    private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Voicechat.MODID, "textures/gui/gui_voicechat.png");
-    private static final Identifier MICROPHONE = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/microphone_button");
-    private static final Identifier HIDE = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/hide_button");
-    private static final Identifier VOLUMES = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/adjust_volumes");
-    private static final Identifier SPEAKER = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/speaker_button");
-    private static final Identifier RECORD = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/record_button");
-    private static final Component TITLE = Component.translatable("gui.voicechat.voice_chat.title");
-    private static final Component SETTINGS = Component.translatable("message.voicechat.settings");
-    private static final Component GROUP = Component.translatable("message.voicechat.group");
-    public static final Component ADJUST_PLAYER_VOLUMES = Component.translatable("message.voicechat.adjust_volumes");
+    private static final ResourceLocation TEXTURE = new ResourceLocation(Voicechat.MODID, "textures/gui/gui_voicechat.png");
+    private static final ResourceLocation MICROPHONE = new ResourceLocation(Voicechat.MODID, "textures/icons/microphone_button.png");
+    private static final ResourceLocation HIDE = new ResourceLocation(Voicechat.MODID, "textures/icons/hide_button.png");
+    private static final ResourceLocation VOLUMES = new ResourceLocation(Voicechat.MODID, "textures/icons/adjust_volumes.png");
+    private static final ResourceLocation SPEAKER = new ResourceLocation(Voicechat.MODID, "textures/icons/speaker_button.png");
+    private static final ResourceLocation RECORD = new ResourceLocation(Voicechat.MODID, "textures/icons/record_button.png");
+    private static final Component TITLE = new TranslatableComponent("gui.voicechat.voice_chat.title");
+    private static final Component SETTINGS = new TranslatableComponent("message.voicechat.settings");
+    private static final Component GROUP = new TranslatableComponent("message.voicechat.group");
+    private static final Component ADJUST_PLAYER_VOLUMES = new TranslatableComponent("message.voicechat.adjust_volumes");
 
     private ToggleImageButton mute;
     private ToggleImageButton disable;
@@ -66,9 +67,10 @@ public class VoiceChatScreen extends VoiceChatScreenBase {
         addRenderableWidget(disable);
 
         ImageButton volumes = new ImageButton(guiLeft + 6 + 20 + 2 + 20 + 2, guiTop + ySize - 6 - 20, VOLUMES, button -> {
-            minecraft.gui.setScreen(new AdjustVolumesScreen());
+            minecraft.setScreen(new AdjustVolumesScreen());
+        }, (button, matrices, mouseX, mouseY) -> {
+            renderTooltip(matrices, ADJUST_PLAYER_VOLUMES, mouseX, mouseY);
         });
-        volumes.setTooltip(Tooltip.create(ADJUST_PLAYER_VOLUMES));
         addRenderableWidget(volumes);
 
         if (client != null && VoicechatClient.CLIENT_CONFIG.useNatives.get()) {
@@ -83,19 +85,19 @@ public class VoiceChatScreen extends VoiceChatScreenBase {
         }, new HideTooltipSupplier(this));
         addRenderableWidget(hide);
 
-        Button settings = Button.builder(SETTINGS, button -> {
-            minecraft.gui.setScreen(new VoiceChatSettingsScreen());
-        }).bounds(guiLeft + 6, guiTop + 6 + 15, 75, 20).build();
+        Button settings = new Button(guiLeft + 6, guiTop + 6 + 15, 75, 20, SETTINGS, button -> {
+            minecraft.setScreen(new VoiceChatSettingsScreen());
+        });
         addRenderableWidget(settings);
 
-        Button group = Button.builder(GROUP, button -> {
+        Button group = new Button(guiLeft + xSize - 6 - 75 + 1, guiTop + 6 + 15, 75, 20, GROUP, button -> {
             ClientGroup g = stateManager.getGroup();
             if (g != null) {
-                minecraft.gui.setScreen(new GroupScreen(g));
+                minecraft.setScreen(new GroupScreen(g));
             } else {
-                minecraft.gui.setScreen(new JoinGroupScreen());
+                minecraft.setScreen(new JoinGroupScreen());
             }
-        }).bounds(guiLeft + xSize - 6 - 75 + 1, guiTop + 6 + 15, 75, 20).build();
+        });
         addRenderableWidget(group);
 
         group.active = client != null && client.getConnection() != null && client.getConnection().getData().groupsEnabled();
@@ -124,32 +126,35 @@ public class VoiceChatScreen extends VoiceChatScreenBase {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
-        if (keyEvent.key() == ClientCompatibilityManager.INSTANCE.getBoundKeyOf(KeyEvents.KEY_VOICE_CHAT).getValue()) {
-            minecraft.gui.setScreen(null);
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == ClientCompatibilityManager.INSTANCE.getBoundKeyOf(KeyEvents.KEY_VOICE_CHAT).getValue()) {
+            minecraft.setScreen(null);
             return true;
         }
-        return super.keyPressed(keyEvent);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
-    public void extractBackgroundRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiLeft, guiTop, 0, 0, xSize, ySize, 256, 256);
+    public void renderBackground(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
+        RenderSystem.setShaderTexture(0, TEXTURE);
+        blit(poseStack, guiLeft, guiTop, 0, 0, xSize, ySize);
     }
 
     @Override
-    public void extractForegroundRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
+    public void renderForeground(PoseStack poseStack, int mouseX, int mouseY, float delta) {
         int titleWidth = font.width(TITLE);
-        guiGraphics.text(font, TITLE, guiLeft + (xSize - titleWidth) / 2, guiTop + 7, FONT_COLOR, false);
+        font.draw(poseStack, TITLE.getVisualOrderText(), (float) (guiLeft + (xSize - titleWidth) / 2), guiTop + 7, FONT_COLOR);
 
         ClientVoicechat client = ClientManager.getClient();
         if (client != null && client.getRecorder() != null) {
             AudioRecorder recorder = client.getRecorder();
-            MutableComponent time = Component.literal(recorder.getDuration());
-            guiGraphics.text(font, time.withStyle(ChatFormatting.DARK_RED), guiLeft + recordingHoverArea.getPosX() + recordingHoverArea.getWidth() / 2 - font.width(time) / 2, guiTop + recordingHoverArea.getPosY() + recordingHoverArea.getHeight() / 2 - font.lineHeight / 2, 0xFF000000, false);
+            MutableComponent time = new TextComponent(recorder.getDuration());
+            font.draw(poseStack, time.withStyle(ChatFormatting.DARK_RED), guiLeft + recordingHoverArea.getPosX() + recordingHoverArea.getWidth() / 2F - font.width(time) / 2F, guiTop + recordingHoverArea.getPosY() + recordingHoverArea.getHeight() / 2F - font.lineHeight / 2F, 0);
 
             if (recordingHoverArea.isHovered(guiLeft, guiTop, mouseX, mouseY)) {
-                guiGraphics.setTooltipForNextFrame(font, Component.translatable("message.voicechat.storage_size", recorder.getStorage()), mouseX, mouseY);
+                renderTooltip(poseStack, new TranslatableComponent("message.voicechat.storage_size", recorder.getStorage()), mouseX, mouseY);
             }
         }
     }

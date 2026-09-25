@@ -3,14 +3,13 @@ package de.maxhenkel.voicechat.net;
 import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.voice.common.PlayerState;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.*;
 
 public class PlayerStatesPacket implements Packet<PlayerStatesPacket> {
 
-    public static final CustomPacketPayload.Type<PlayerStatesPacket> PLAYER_STATES = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(Voicechat.MODID, "states"));
+    public static final ResourceLocation PLAYER_STATES = new ResourceLocation(Voicechat.MODID, "states");
 
     private Collection<PlayerState> playerStates;
 
@@ -24,6 +23,11 @@ public class PlayerStatesPacket implements Packet<PlayerStatesPacket> {
 
     public Collection<PlayerState> getPlayerStates() {
         return playerStates;
+    }
+
+    @Override
+    public ResourceLocation getIdentifier() {
+        return PLAYER_STATES;
     }
 
     @Override
@@ -44,11 +48,6 @@ public class PlayerStatesPacket implements Packet<PlayerStatesPacket> {
         for (PlayerState state : playerStates) {
             state.toBytes(buf);
         }
-    }
-
-    @Override
-    public Type<PlayerStatesPacket> type() {
-        return PLAYER_STATES;
     }
 
 }

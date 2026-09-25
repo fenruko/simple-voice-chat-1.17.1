@@ -1,0 +1,162 @@
+name: Build 1.17.1 Fabric
+
+on:
+  push:
+    branches:
+      - 'arena/01a0d8ef-simple-voice-chat-1-17-1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: voicechat-1171-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDKs (Gradle runs on 21, compile toolchain 17)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+
+      - name: Build Fabric jar
+        run: |
+          set -o pipefail
+          ./gradlew :fabric:build --stacktrace 2>&1 | tee build.log
+
+      - name: Diagnose fabric-loader versions
+        if: always()
+        run: |
+          set +e
+          {
+            echo "### fabric-loader dependency insight"
+            echo '```'
+            ./gradlew :fabric:dependencyInsight --configuration runtimeClasspath --dependency fabric-loader 2>&1 | grep -v "^$" | head -80
+            echo '```'
+            echo "### dev launch injector config (exact knot classpath)"
+            echo '```'
+            ./gradlew -q :fabric:generateDLIConfig > /dev/null 2>&1
+            find fabric/build .gradle -name "dev-launch-injector.conf" -o -name "*launch*.conf" 2>/dev/null | while read -r f; do echo "== $f"; cat "$f"; done
+            echo '```'
+          } | tee -a build.log >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke test dedicated server
+        run: |
+          set +e
+          mkdir -p fabric/run
+          printf 'eula=true\n' > fabric/run/eula.txt
+          timeout 360 ./gradlew :fabric:runServer > runserver.log 2>&1
+          rc=$?
+          set -e
+          if grep -q 'Done (' runserver.log; then
+            echo "Server booted successfully (Done marker found, rc=$rc)"
+            exit 0
+          fi
+          {
+            echo "===== runServer smoke test failed (rc=$rc) ====="
+            tail -n 200 runserver.log
+          } >> build.log
+          echo "::error title=runServer smoke test failed::See build.log"
+          exit 1
+
+      - name: Smoke test client
+        run: |
+          set +e
+          timeout 600 xvfb-run -a ./gradlew :fabric:runClient > runclient.log 2>&1
+          rc=$?
+          set -e
+          crashes=$(find fabric/run/crash-reports -type f 2>/dev/null | wc -l)
+          if [ "$rc" = "124" ] && [ "$crashes" = "0" ]; then
+            echo "Client alive after timeout with no crash reports - OK"
+            exit 0
+          fi
+          {
+            echo "===== runClient smoke test failed (rc=$rc, crash reports: $crashes) ====="
+            if [ "$crashes" != "0" ]; then
+              echo "--- crash reports ---"
+              find fabric/run/crash-reports -type f -exec sh -c 'echo "== $1 =="; cat "$1"' _ {} \;
+            fi
+            echo "--- log tail ---"
+            tail -n 250 runclient.log
+          } >> build.log
+          echo "::error title=runClient smoke test failed::See build.log"
+          exit 1
+
+      - name: Publish build log on failure
+        if: failure()
+        run: |
+          set +e
+          touch build.log
+          # 1) Commit the full log FIRST so it is retrievable over git
+          mkdir -p builds
+          cp build.log builds/build.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f builds/build.log
+          if ! git diff --cached --quiet; then
+            git commit -m "ci: failure build log"
+            git push || echo "push failed"
+          fi
+          # 2) Human-readable summary in the workflow UI
+          {
+            echo "### Gradle build failed"
+            echo '```'
+            sed -n '/What went wrong/,/^\* Try/p' build.log | head -60
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY" 2>/dev/null
+          # 3) Machine-readable annotation (retrievable via the GitHub API)
+          ERR=$(sed -n '/What went wrong/,/^\* Try/p' build.log | sed -e ':a' -e 'N' -e '$!ba' -e 's/%/%25/g' -e 's/\n/%0A/g' | head -c 4000)
+          if [ -z "$ERR" ]; then
+            ERR=$(tail -c 2000 build.log | sed -e ':a' -e 'N' -e '$!ba' -e 's/%/%25/g' -e 's/\n/%0A/g')
+          fi
+          echo "::error title=Gradle build failed::${ERR}"
+          exit 1
+
+      - name: Collect jars
+        run: |
+          set -e
+          mkdir -p builds
+          find fabric/build/libs -name '*.jar' \
+            ! -name '*-sources*' \
+            ! -name '*-dev*' \
+            ! -name '*-javadoc*' \
+            -exec cp -v {} builds/ \;
+          echo "=== Collected ==="
+          ls -la builds/
+          for j in builds/*.jar; do
+            echo "=== Contents of $j (first 60 entries) ==="
+            unzip -l "$j" | head -60
+          done
+          JAR=$(ls builds/voicechat-fabric*.jar 2>/dev/null | head -1)
+          if [ -z "$JAR" ]; then echo "ERROR: voicechat-fabric jar not found"; exit 1; fi
+          echo "=== fabric.mod.json inside $JAR ==="
+          unzip -p "$JAR" fabric.mod.json
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: voicechat-1.17.1-fabric-jars
+          path: builds/*.jar
+          if-no-files-found: error
+
+      - name: Commit jars to branch
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f builds/*.jar
+          if git diff --cached --quiet; then
+            echo "No jar changes to commit"
+            exit 0
+          fi
+          git commit -m "ci: build 1.17.1 fabric jars [skip ci]"
+          git push

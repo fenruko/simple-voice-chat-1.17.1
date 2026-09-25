@@ -7,7 +7,7 @@ import de.maxhenkel.voicechat.voice.client.KeyEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 
@@ -20,7 +20,7 @@ public class OnboardingManager {
     }
 
     public static void startOnboarding(@Nullable Screen parent) {
-        MC.gui.setScreen(getOnboardingScreen(parent));
+        MC.setScreen(getOnboardingScreen(parent));
     }
 
     public static Screen getOnboardingScreen(@Nullable Screen parent) {
@@ -32,14 +32,14 @@ public class OnboardingManager {
         VoicechatClient.CLIENT_CONFIG.disabled.set(false).save();
         VoicechatClient.CLIENT_CONFIG.onboardingFinished.set(true).save();
         ClientManager.getPlayerStateManager().onFinishOnboarding();
-        MC.gui.setScreen(null);
+        MC.setScreen(null);
     }
 
     public static void onConnecting() {
         if (!isOnboarding()) {
             return;
         }
-        ChatUtils.sendModMessage(Component.translatable("message.voicechat.set_up",
+        ChatUtils.sendModMessage(new TranslatableComponent("message.voicechat.set_up",
                 KeyEvents.KEY_VOICE_CHAT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BOLD, ChatFormatting.UNDERLINE)
         ));
     }

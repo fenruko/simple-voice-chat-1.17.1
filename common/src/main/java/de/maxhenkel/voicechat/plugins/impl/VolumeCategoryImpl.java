@@ -4,6 +4,8 @@ import de.maxhenkel.voicechat.api.VolumeCategory;
 import net.minecraft.locale.Language;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 import java.util.regex.Pattern;
@@ -53,9 +55,12 @@ public class VolumeCategoryImpl implements VolumeCategory {
 
     public Component getDisplayName() {
         if (nameTranslationKey != null) {
-            return Component.translatableWithFallback(nameTranslationKey, name);
+            Language lang = Language.getInstance();
+            if (lang.has(nameTranslationKey)) {
+                return new TranslatableComponent(nameTranslationKey);
+            }
         }
-        return Component.literal(name);
+        return new TextComponent(name);
     }
 
     public String getSearchName() {
@@ -63,7 +68,10 @@ public class VolumeCategoryImpl implements VolumeCategory {
             return name;
         }
         Language lang = Language.getInstance();
-        return lang.getOrDefault(nameTranslationKey, name);
+        if (lang.has(nameTranslationKey)) {
+            return lang.getOrDefault(nameTranslationKey);
+        }
+        return name;
     }
 
     @Nullable
@@ -74,9 +82,12 @@ public class VolumeCategoryImpl implements VolumeCategory {
 
     public Component getDisplayDescription() {
         if (descriptionTranslationKey != null) {
-            return Component.translatableWithFallback(descriptionTranslationKey, description);
+            Language lang = Language.getInstance();
+            if (lang.has(descriptionTranslationKey)) {
+                return new TranslatableComponent(descriptionTranslationKey);
+            }
         }
-        return description != null ? Component.literal(description) : Component.empty();
+        return description != null ? new TextComponent(description) : TextComponent.EMPTY;
     }
 
     @Override

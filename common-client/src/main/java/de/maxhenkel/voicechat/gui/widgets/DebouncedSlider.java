@@ -1,9 +1,8 @@
 package de.maxhenkel.voicechat.gui.widgets;
 
 import net.minecraft.client.gui.components.AbstractSliderButton;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 public abstract class DebouncedSlider extends AbstractSliderButton {
 
@@ -16,23 +15,23 @@ public abstract class DebouncedSlider extends AbstractSliderButton {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
-        boolean result = super.keyPressed(keyEvent);
-        if (keyEvent.isLeft() || keyEvent.isRight()) {
+    public boolean keyPressed(int keyCode, int j, int k) {
+        boolean result = super.keyPressed(keyCode, j, k);
+        if (keyCode == GLFW.GLFW_KEY_LEFT || keyCode == GLFW.GLFW_KEY_RIGHT) {
             applyDebouncedInternal();
         }
         return result;
     }
 
     @Override
-    public void onClick(MouseButtonEvent mouseButtonEvent, boolean bl) {
-        super.onClick(mouseButtonEvent, bl);
+    public void onClick(double d, double e) {
+        super.onClick(d, e);
         applyDebouncedInternal();
     }
 
     @Override
-    protected void onDrag(MouseButtonEvent mouseButtonEvent, double d, double e) {
-        super.onDrag(mouseButtonEvent, d, e);
+    protected void onDrag(double d, double e, double f, double g) {
+        super.onDrag(d, e, f, g);
         dragged = true;
         if (value >= 1D || value <= 0D) {
             applyDebouncedInternal();
@@ -41,8 +40,8 @@ public abstract class DebouncedSlider extends AbstractSliderButton {
     }
 
     @Override
-    public void onRelease(MouseButtonEvent mouseButtonEvent) {
-        super.onRelease(mouseButtonEvent);
+    public void onRelease(double d, double e) {
+        super.onRelease(d, e);
         if (dragged) {
             applyDebouncedInternal();
             dragged = false;

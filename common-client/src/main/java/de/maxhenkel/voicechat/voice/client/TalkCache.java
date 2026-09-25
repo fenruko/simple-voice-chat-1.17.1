@@ -42,18 +42,6 @@ public class TalkCache {
     }
 
     /**
-     * This just exists for backwards compatibility with flashback
-     *
-     * @param entity     the entity UUID
-     * @param whispering if the entity is whispering
-     * @deprecated Use {@link #updateLevel(UUID, String, boolean, short[])} instead
-     */
-    @Deprecated
-    public void updateTalking(UUID entity, boolean whispering) {
-        updateTalking(entity, whispering, AudioUtils.LOWEST_DB);
-    }
-
-    /**
      * Updates the audio level of a player talking or a specific category
      *
      * @param id         the entity UUID

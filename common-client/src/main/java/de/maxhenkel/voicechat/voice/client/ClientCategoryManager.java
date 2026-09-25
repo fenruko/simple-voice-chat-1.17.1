@@ -10,7 +10,7 @@ import de.maxhenkel.voicechat.plugins.CategoryManager;
 import de.maxhenkel.voicechat.plugins.impl.VolumeCategoryImpl;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -18,15 +18,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientCategoryManager extends CategoryManager {
 
-    protected final Map<String, Identifier> images;
+    protected final Map<String, ResourceLocation> images;
 
     public ClientCategoryManager() {
         images = new ConcurrentHashMap<>();
-        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().addCategoryChannel, (player, packet) -> {
+        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().addCategoryChannel, (client, handler, packet) -> {
             addCategory(packet.getCategory());
             Voicechat.LOGGER.debug("Added category {}", packet.getCategory().getId());
         });
-        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().removeCategoryChannel, (player, packet) -> {
+        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().removeCategoryChannel, (client, handler, packet) -> {
             removeCategory(packet.getCategoryId());
             Voicechat.LOGGER.debug("Removed category {}", packet.getCategoryId());
         });
@@ -58,15 +58,14 @@ public class ClientCategoryManager extends CategoryManager {
     }
 
     private void registerImage(String id, NativeImage image) {
-        Identifier identifier = Identifier.fromNamespaceAndPath(Voicechat.MODID, id);
-        Minecraft.getInstance().getEntityRenderDispatcher().textureManager.register(identifier, new DynamicTexture(identifier::toString, image));
-        images.put(id, identifier);
+        ResourceLocation resourceLocation = Minecraft.getInstance().getEntityRenderDispatcher().textureManager.register(id, new DynamicTexture(image));
+        images.put(id, resourceLocation);
     }
 
     private void unRegisterImage(String id) {
-        Identifier identifier = images.get(id);
-        if (identifier != null) {
-            Minecraft.getInstance().getEntityRenderDispatcher().textureManager.release(identifier);
+        ResourceLocation resourceLocation = images.get(id);
+        if (resourceLocation != null) {
+            Minecraft.getInstance().getEntityRenderDispatcher().textureManager.release(resourceLocation);
             images.remove(id);
         }
     }
@@ -82,13 +81,13 @@ public class ClientCategoryManager extends CategoryManager {
                 throw new IllegalStateException("Icon is not 16x16");
             }
             for (int y = 0; y < icon.length; y++) {
-                nativeImage.setPixel(x, y, icon[x][y]);
+                nativeImage.setPixelRGBA(x, y, icon[x][y]);
             }
         }
         return nativeImage;
     }
 
-    public Identifier getTexture(String id, Identifier defaultImage) {
+    public ResourceLocation getTexture(String id, ResourceLocation defaultImage) {
         return images.getOrDefault(id, defaultImage);
     }
 

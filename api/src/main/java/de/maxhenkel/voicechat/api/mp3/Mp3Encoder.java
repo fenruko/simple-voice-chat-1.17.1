@@ -1,12 +1,7 @@
 package de.maxhenkel.voicechat.api.mp3;
 
-import de.maxhenkel.voicechat.api.VoicechatApi;
-
 import java.io.IOException;
 
-/**
- * You can obtain an instance of this class by calling {@link VoicechatApi#createMp3Encoder}.
- */
 public interface Mp3Encoder {
 
     /**

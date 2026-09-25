@@ -1,32 +1,31 @@
 package de.maxhenkel.voicechat.gui.widgets;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.VoicechatClient;
 import de.maxhenkel.voicechat.natives.RNNoiseManager;
 import de.maxhenkel.voicechat.voice.client.MicrophoneActivationType;
 import de.maxhenkel.voicechat.voice.common.AudioUtils;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
 
 public class VoiceActivationSlider extends DebouncedSlider implements MicTestButton.MicListener {
 
-    private static final Identifier SLIDER_SPRITE = Identifier.withDefaultNamespace("widget/slider");
-    private static final Identifier HIGHLIGHTED_SPRITE = Identifier.withDefaultNamespace("widget/slider_highlighted");
-    private static final Identifier SLIDER_HANDLE_SPRITE = Identifier.withDefaultNamespace("widget/slider_handle");
-    private static final Identifier SLIDER_HANDLE_HIGHLIGHTED_SPRITE = Identifier.withDefaultNamespace("widget/slider_handle_highlighted");
-    private static final Identifier VOICE_ACTIVATION_SLIDER = Identifier.fromNamespaceAndPath(Voicechat.MODID, "textures/gui/voice_activation_slider.png");
-    private static final Component NO_ACTIVATION = Component.translatable("message.voicechat.voice_activation.disabled").withStyle(ChatFormatting.RED);
+    private static final ResourceLocation SLIDER = new ResourceLocation(Voicechat.MODID, "textures/gui/voice_activation_slider.png");
+    private static final Component NO_ACTIVATION = new TranslatableComponent("message.voicechat.voice_activation.disabled").withStyle(ChatFormatting.RED);
 
     private final SlidingMaxSmooth micValue;
 
     public VoiceActivationSlider(int x, int y, int width, int height) {
-        super(x, y, width, height, Component.empty(), AudioUtils.dbToPerc(VoicechatClient.CLIENT_CONFIG.voiceActivationThreshold.get().floatValue()));
+        super(x, y, width, height, TextComponent.EMPTY, AudioUtils.dbToPerc(VoicechatClient.CLIENT_CONFIG.voiceActivationThreshold.get().floatValue()));
         updateMessage();
         micValue = new SlidingMaxSmooth();
     }
@@ -42,34 +41,30 @@ public class VoiceActivationSlider extends DebouncedSlider implements MicTestBut
     }
 
     @Override
-    public void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int i, int j, float f) {
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, getSlider(), getX(), getY(), getWidth(), getHeight());
-
-        int micWidth = (int) ((width - 2) * micValue.smoothMax());
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, VOICE_ACTIVATION_SLIDER, getX() + 1, getY() + 1, 0, 0, micWidth, 18, 256, 256);
-
-        active = shouldShowSlider();
+    protected void renderBg(PoseStack poseStack, Minecraft minecraft, int i, int j) {
+        RenderSystem.setShaderTexture(0, SLIDER);
+        RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
+        int width = (int) ((getWidth() - 2) * micValue.smoothMax());
+        blit(poseStack, x + 1, y + 1, 0, 0, width, 18);
+        boolean shouldShow = shouldShowSlider();
+        if (shouldShow != active) {
+            active = shouldShow;
+            updateMessage();
+        }
         if (!active) {
             return;
         }
-
-        guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, getHandle(), getX() + (int) (value * (double) (width - 8)), getY(), 8, 20);
-
-        extractScrollingStringOverContents(guiGraphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE), getMessage(), 2);
-    }
-
-    private Identifier getSlider() {
-        return isFocused() && !(isHovered || isFocused()) ? HIGHLIGHTED_SPRITE : SLIDER_SPRITE;
-    }
-
-    private Identifier getHandle() {
-        return !isHovered && !isFocused() ? SLIDER_HANDLE_SPRITE : SLIDER_HANDLE_HIGHLIGHTED_SPRITE;
+        super.renderBg(poseStack, minecraft, i, j);
     }
 
     @Override
     protected void updateMessage() {
+        if (!active) {
+            setMessage(new TextComponent(""));
+            return;
+        }
         long db = Math.round(AudioUtils.percToDb(value));
-        MutableComponent component = Component.translatable("message.voicechat.voice_activation", db);
+        MutableComponent component = new TranslatableComponent("message.voicechat.voice_activation", db);
 
         if (db >= -10L) {
             component.withStyle(ChatFormatting.RED);

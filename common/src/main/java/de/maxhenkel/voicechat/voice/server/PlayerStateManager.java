@@ -26,7 +26,7 @@ public class PlayerStateManager {
         this.voicechatServer = voicechatServer;
         this.states = new ConcurrentHashMap<>();
 
-        CommonCompatibilityManager.INSTANCE.getNetManager().updateStateChannel.setServerListener((player, packet) -> {
+        CommonCompatibilityManager.INSTANCE.getNetManager().updateStateChannel.setServerListener((server, player, handler, packet) -> {
             PlayerState state = states.get(player.getUUID());
 
             if (state == null) {
@@ -143,7 +143,7 @@ public class PlayerStateManager {
     }
 
     public static PlayerState defaultDisconnectedState(ServerPlayer player) {
-        return new PlayerState(player.getUUID(), player.getGameProfile().name(), false, true);
+        return new PlayerState(player.getUUID(), player.getGameProfile().getName(), false, true);
     }
 
     public void setGroup(ServerPlayer player, @Nullable UUID group) {

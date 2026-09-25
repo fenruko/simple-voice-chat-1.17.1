@@ -1,5 +1,6 @@
 package de.maxhenkel.voicechat.gui.widgets;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.VoicechatClient;
 import de.maxhenkel.voicechat.debug.VoicechatUncaughtExceptionHandler;
@@ -9,22 +10,21 @@ import de.maxhenkel.voicechat.voice.client.speaker.SpeakerException;
 import de.maxhenkel.voicechat.voice.client.speaker.SpeakerManager;
 import de.maxhenkel.voicechat.voice.common.AudioUtils;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 public class MicTestButton extends ToggleImageButton implements ImageButton.TooltipSupplier {
 
-    private static final Identifier MICROPHONE = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/microphone_button");
-    private static final Component TEST_DISABLED = Component.translatable("message.voicechat.mic_test.disabled");
-    private static final Component TEST_ENABLED = Component.translatable("message.voicechat.mic_test.enabled");
-    private static final Component TEST_UNAVAILABLE = Component.translatable("message.voicechat.mic_test_unavailable").withStyle(ChatFormatting.RED);
+    private static final ResourceLocation MICROPHONE = new ResourceLocation(Voicechat.MODID, "textures/icons/microphone_button.png");
+    private static final Component TEST_DISABLED = new TranslatableComponent("message.voicechat.mic_test.disabled");
+    private static final Component TEST_ENABLED = new TranslatableComponent("message.voicechat.mic_test.enabled");
+    private static final Component TEST_UNAVAILABLE = new TranslatableComponent("message.voicechat.mic_test_unavailable").withStyle(ChatFormatting.RED);
 
     private boolean micActive;
     @Nullable
@@ -51,13 +51,13 @@ public class MicTestButton extends ToggleImageButton implements ImageButton.Tool
     }
 
     @Override
-    public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float f) {
-        super.extractContents(guiGraphics, mouseX, mouseY, f);
+    public void render(PoseStack matrixStack, int x, int y, float partialTicks) {
+        super.render(matrixStack, x, y, partialTicks);
         updateLastRender();
     }
 
     public void updateLastRender() {
-        if (voiceThread != null) {
+        if (visible && voiceThread != null) {
             voiceThread.updateLastRender();
         }
     }
@@ -66,12 +66,16 @@ public class MicTestButton extends ToggleImageButton implements ImageButton.Tool
         this.micActive = micActive;
     }
 
+    public boolean isHovered() {
+        return isHovered;
+    }
+
     public boolean isMicActive() {
         return micActive;
     }
 
     @Override
-    public void onPress(InputWithModifiers input) {
+    public void onPress() {
         setMicActive(!micActive);
         if (micActive) {
             close();
@@ -99,45 +103,24 @@ public class MicTestButton extends ToggleImageButton implements ImageButton.Tool
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-        defaultButtonNarrationText(narrationElementOutput);
+    public void updateNarration(NarrationElementOutput narrationElementOutput) {
+        this.defaultButtonNarrationText(narrationElementOutput);
     }
-
-    @Nullable
-    private State lastState;
 
     @Override
-    public void updateTooltip(ImageButton button) {
-        State state = getState();
-        if (state != lastState) {
-            lastState = state;
-            button.setTooltip(Tooltip.create(state.getComponent()));
+    public void onTooltip(ImageButton button, PoseStack matrices, int mouseX, int mouseY) {
+        Screen screen = mc.screen;
+        if (screen == null) {
+            return;
         }
-    }
-
-    private State getState() {
         if (!active) {
-            return State.UNAVAILABLE;
-        } else if (micActive) {
-            return State.ENABLED;
+            screen.renderTooltip(matrices, TEST_UNAVAILABLE, mouseX, mouseY);
+            return;
+        }
+        if (micActive) {
+            screen.renderTooltip(matrices, TEST_ENABLED, mouseX, mouseY);
         } else {
-            return State.DISABLED;
-        }
-    }
-
-    private enum State {
-        ENABLED(TEST_ENABLED),
-        DISABLED(TEST_DISABLED),
-        UNAVAILABLE(TEST_UNAVAILABLE);
-
-        private final Component component;
-
-        State(Component component) {
-            this.component = component;
-        }
-
-        public Component getComponent() {
-            return component;
+            screen.renderTooltip(matrices, TEST_DISABLED, mouseX, mouseY);
         }
     }
 

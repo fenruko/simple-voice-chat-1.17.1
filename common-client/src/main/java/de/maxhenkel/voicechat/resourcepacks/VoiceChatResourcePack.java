@@ -1,43 +1,62 @@
 package de.maxhenkel.voicechat.resourcepacks;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import de.maxhenkel.voicechat.Voicechat;
-import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.packs.*;
-import net.minecraft.server.packs.metadata.pack.PackFormat;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.AbstractPackResources;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.metadata.pack.PackMetadataSection;
 import net.minecraft.server.packs.repository.Pack;
+import net.minecraft.server.packs.repository.PackCompatibility;
 import net.minecraft.server.packs.repository.PackSource;
-import net.minecraft.server.packs.resources.IoSupplier;
 
 import javax.annotation.Nullable;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class VoiceChatResourcePack extends AbstractPackMetadataResources implements PackResources, Pack.ResourcesSupplier {
+public class VoiceChatResourcePack extends AbstractPackResources {
 
-    public VoiceChatResourcePack(String id, Component name) {
-        super(new PackLocationInfo(id, name, PackSource.BUILT_IN, Optional.empty()));
+    protected String path;
+    protected Component name;
+
+    public VoiceChatResourcePack(String path, Component name) {
+        super(null);
+        this.path = path;
+        this.name = name;
     }
 
+    @Nullable
     public Pack toPack() {
-        PackFormat format = SharedConstants.getCurrentVersion().packVersion(PackType.CLIENT_RESOURCES);
-        Pack.Metadata meta = Pack.readPackMetadata(location(), this, format, PackType.CLIENT_RESOURCES);
-        if (meta == null) {
-            throw new IllegalStateException("Could not find builtin resource pack info");
+        try {
+            PackMetadataSection packMetadataSection = getMetadataSection(PackMetadataSection.SERIALIZER);
+            if (packMetadataSection == null) {
+                return null;
+            }
+            return new Pack(path, false, () -> this, name, packMetadataSection.getDescription(), PackCompatibility.forMetadata(packMetadataSection, PackType.CLIENT_RESOURCES), Pack.Position.TOP, false, PackSource.BUILT_IN);
+        } catch (IOException e) {
+            return null;
         }
-        return Pack.readMetaAndCreate(location(), this, PackType.CLIENT_RESOURCES, new PackSelectionConfig(false, Pack.Position.TOP, false));
+    }
+
+    @Override
+    public String getName() {
+        return path;
     }
 
     private String getPath() {
-        return "/packs/" + location().id() + "/";
+        return "/packs/" + path + "/";
     }
 
     @Nullable
@@ -45,50 +64,46 @@ public class VoiceChatResourcePack extends AbstractPackMetadataResources impleme
         return Voicechat.class.getResourceAsStream(getPath() + name);
     }
 
-    @Nullable
     @Override
-    public IoSupplier<InputStream> getRootResource(String... strings) {
-        return getResource(String.join("/", strings));
-    }
-
-    @Nullable
-    @Override
-    public IoSupplier<InputStream> getResource(PackType packType, Identifier identifier) {
-        return getRootResource(packType.getDirectory(), identifier.getNamespace(), identifier.getPath());
-    }
-
-    @Nullable
-    private IoSupplier<InputStream> getResource(String path) {
-        InputStream resourceAsStream = get(path);
+    protected InputStream getResource(String name) throws IOException {
+        InputStream resourceAsStream = get(name);
         if (resourceAsStream == null) {
-            return null;
+            throw new FileNotFoundException("Resource " + name + " does not exist");
         }
-        return () -> resourceAsStream;
+        return resourceAsStream;
     }
 
     @Override
-    public void listResources(PackType type, String namespace, String prefix, PackResources.ResourceOutput resourceOutput) {
+    protected boolean hasResource(String name) {
+        try {
+            return get(name) != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public Collection<ResourceLocation> getResources(PackType type, String namespace, String prefix, int maxDepth, Predicate<String> pathFilter) {
+        List<ResourceLocation> list = Lists.newArrayList();
         try {
             URL url = Voicechat.class.getResource(getPath());
-            if (url == null) {
-                return;
-            }
             Path namespacePath = Paths.get(url.toURI()).resolve(type.getDirectory()).resolve(namespace);
             Path resPath = namespacePath.resolve(prefix);
 
             if (!Files.exists(resPath)) {
-                return;
+                return list;
             }
 
             try (Stream<Path> files = Files.walk(resPath)) {
                 files.filter(path -> !Files.isDirectory(path)).forEach(path -> {
-                    Identifier identifier = Identifier.fromNamespaceAndPath(namespace, convertPath(path).substring(convertPath(namespacePath).length() + 1));
-                    resourceOutput.accept(identifier, getResource(type, identifier));
+                    ResourceLocation resourceLocation = new ResourceLocation(namespace, convertPath(path).substring(convertPath(namespacePath).length() + 1));
+                    list.add(resourceLocation);
                 });
             }
         } catch (Exception e) {
             Voicechat.LOGGER.error("Failed to list builtin pack resources", e);
         }
+        return list.stream().filter(resourceLocation -> pathFilter.test(resourceLocation.getPath())).toList();
     }
 
     private static String convertPath(Path path) {
@@ -113,15 +128,5 @@ public class VoiceChatResourcePack extends AbstractPackMetadataResources impleme
     @Override
     public void close() {
 
-    }
-
-    @Override
-    public PackMetadataResources openMetadata(PackLocationInfo packLocationInfo) {
-        return this;
-    }
-
-    @Override
-    public Stream<PackResources> openResources(PackLocationInfo packLocationInfo, Pack.Metadata metadata) {
-        return Stream.of(this);
     }
 }

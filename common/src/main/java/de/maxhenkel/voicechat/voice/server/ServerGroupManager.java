@@ -9,7 +9,7 @@ import de.maxhenkel.voicechat.net.RemoveGroupPacket;
 import de.maxhenkel.voicechat.permission.PermissionManager;
 import de.maxhenkel.voicechat.plugins.PluginManager;
 import de.maxhenkel.voicechat.voice.common.PlayerState;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerPlayer;
 
 import javax.annotation.Nullable;
@@ -27,22 +27,22 @@ public class ServerGroupManager {
         this.server = server;
         groups = new ConcurrentHashMap<>();
 
-        CommonCompatibilityManager.INSTANCE.getNetManager().joinGroupChannel.setServerListener((player, packet) -> {
+        CommonCompatibilityManager.INSTANCE.getNetManager().joinGroupChannel.setServerListener((srv, player, handler, packet) -> {
             if (!Voicechat.SERVER_CONFIG.groupsEnabled.get()) {
                 return;
             }
             if (!PermissionManager.INSTANCE.GROUPS_PERMISSION.hasPermission(player)) {
-                player.sendOverlayMessage(Component.translatable("message.voicechat.no_group_permission"));
+                player.displayClientMessage(new TranslatableComponent("message.voicechat.no_group_permission"), true);
                 return;
             }
             joinGroup(groups.get(packet.getGroup()), player, packet.getPassword());
         });
-        CommonCompatibilityManager.INSTANCE.getNetManager().createGroupChannel.setServerListener((player, packet) -> {
+        CommonCompatibilityManager.INSTANCE.getNetManager().createGroupChannel.setServerListener((srv, player, handler, packet) -> {
             if (!Voicechat.SERVER_CONFIG.groupsEnabled.get()) {
                 return;
             }
             if (!PermissionManager.INSTANCE.GROUPS_PERMISSION.hasPermission(player)) {
-                player.sendOverlayMessage(Component.translatable("message.voicechat.no_group_permission"));
+                player.displayClientMessage(new TranslatableComponent("message.voicechat.no_group_permission"), true);
                 return;
             }
             if (!Voicechat.GROUP_REGEX.matcher(packet.getName()).matches()) {
@@ -55,7 +55,7 @@ public class ServerGroupManager {
             }
             addGroup(new Group(UUID.randomUUID(), packet.getName(), packet.getPassword(), false, false, packet.getType()), player);
         });
-        CommonCompatibilityManager.INSTANCE.getNetManager().leaveGroupChannel.setServerListener((player, packet) -> {
+        CommonCompatibilityManager.INSTANCE.getNetManager().leaveGroupChannel.setServerListener((srv, player, handler, packet) -> {
             leaveGroup(player);
         });
     }

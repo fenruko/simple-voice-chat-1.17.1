@@ -7,9 +7,9 @@ import java.util.UUID;
 
 public class ClientConnection {
 
-    protected final UUID playerUUID;
-    protected final SocketAddress address;
-    protected long lastKeepAliveResponse;
+    private final UUID playerUUID;
+    private final SocketAddress address;
+    private long lastKeepAliveResponse;
 
     public ClientConnection(UUID playerUUID, SocketAddress address) {
         this.playerUUID = playerUUID;

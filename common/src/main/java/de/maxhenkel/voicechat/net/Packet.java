@@ -1,14 +1,14 @@
 package de.maxhenkel.voicechat.net;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
-public interface Packet<T extends Packet<T>> extends CustomPacketPayload {
+public interface Packet<T extends Packet<T>> {
+
+    ResourceLocation getIdentifier();
 
     T fromBytes(FriendlyByteBuf buf);
 
     void toBytes(FriendlyByteBuf buf);
 
-    @Override
-    Type<T> type();
 }

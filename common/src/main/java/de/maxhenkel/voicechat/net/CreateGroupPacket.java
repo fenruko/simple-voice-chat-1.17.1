@@ -4,14 +4,13 @@ import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.api.Group;
 import de.maxhenkel.voicechat.plugins.impl.GroupImpl;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
 
 public class CreateGroupPacket implements Packet<CreateGroupPacket> {
 
-    public static final CustomPacketPayload.Type<CreateGroupPacket> CREATE_GROUP = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(Voicechat.MODID, "create_group"));
+    public static final ResourceLocation CREATE_GROUP = new ResourceLocation(Voicechat.MODID, "create_group");
 
     private String name;
     @Nullable
@@ -42,6 +41,11 @@ public class CreateGroupPacket implements Packet<CreateGroupPacket> {
     }
 
     @Override
+    public ResourceLocation getIdentifier() {
+        return CREATE_GROUP;
+    }
+
+    @Override
     public CreateGroupPacket fromBytes(FriendlyByteBuf buf) {
         name = buf.readUtf(Voicechat.MAX_GROUP_NAME_LENGTH);
         password = null;
@@ -60,11 +64,6 @@ public class CreateGroupPacket implements Packet<CreateGroupPacket> {
             buf.writeUtf(password, Voicechat.MAX_GROUP_NAME_LENGTH);
         }
         buf.writeShort(GroupImpl.TypeImpl.toInt(type));
-    }
-
-    @Override
-    public Type<CreateGroupPacket> type() {
-        return CREATE_GROUP;
     }
 
 }
