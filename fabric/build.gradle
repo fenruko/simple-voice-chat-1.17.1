@@ -73,6 +73,13 @@ shadowJar {
     relocate 'org.concentus', 'de.maxhenkel.voicechat.concentus'
 }
 
+// fabric-permissions-api's POM drags a plain fabric-loader onto the runtime
+// classpath next to Loom's remapped copy, which makes Fabric Loader abort with
+// "duplicate fabric loader classes found on classpath". Only keep the remapped one.
+configurations.named('runtimeClasspath') {
+    exclude group: 'net.fabricmc', module: 'fabric-loader'
+}
+
 // This is to make the run tasks use Java 17, since Minecraft 1.18 does not run on newer versions
 tasks.named("runClient", JavaExec).configure {
     javaLauncher = javaToolchains.launcherFor {
