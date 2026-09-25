@@ -29,7 +29,34 @@ jobs:
             21
 
       - name: Build Fabric jar
-        run: ./gradlew :fabric:build --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew :fabric:build --stacktrace 2>&1 | tee build.log
+
+      - name: Publish build log on failure
+        if: failure()
+        run: |
+          set -e
+          touch build.log
+          # Human-readable summary in the workflow UI
+          {
+            echo "### Gradle build failed"
+            echo '```'
+            sed -n '/What went wrong/,/^\* Try/p' build.log | head -60 || tail -n 80 build.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Machine-readable annotation (retrievable via the GitHub API)
+          ERR=$(sed -n '/What went wrong/,/^\* Try/p' build.log | head -c 1500 | tr '\n' '|' tr '%' '%25')
+          [ -n "$ERR" ] || ERR=$(tail -c 1500 build.log | tr '\n' '|' tr '%' '%25')
+          echo "::error title=Gradle build failed::${ERR}"
+          # Full log committed to the branch so it can be fetched over git
+          mkdir -p builds
+          cp build.log builds/build.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f builds/build.log
+          git diff --cached --quiet || (git commit -m "ci: failure build log [skip ci]" && git push)
+          exit 1
 
       - name: Collect jars
         run: |
