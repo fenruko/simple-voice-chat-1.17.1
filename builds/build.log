@@ -102,26 +102,20 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD SUCCESSFUL in 2m 10s
+BUILD SUCCESSFUL in 1m 47s
 20 actionable tasks: 20 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 ### fabric-loader dependency insight
 ```
-net.fabricmc:fabric-loader:0.16.7
-  Variant runtime:
-    | Attribute Name                 | Provided     | Requested    |
-    |--------------------------------|--------------|--------------|
-    | org.gradle.status              | release      |              |
-    | org.gradle.category            | library      | library      |
-    | org.gradle.libraryelements     | jar          | jar          |
-    | org.gradle.usage               | java-runtime | java-runtime |
-    | org.gradle.dependency.bundling |              | external     |
-    | org.gradle.jvm.environment     |              | standard-jvm |
-    | org.gradle.jvm.version         |              | 16           |
-
-net.fabricmc:fabric-loader:0.16.7
-\--- runtimeClasspath
-
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Configure project :common
+Fabric Loom: 1.17.20
+> Configure project :common-client
+Fabric Loom: 1.17.20
+> Configure project :fabric
+Fabric Loom: 1.17.20
+> Task :fabric:dependencyInsight
 remapped.net.fabricmc:fabric-loader-293d29cc:0.13.1
   Variant runtime:
     | Attribute Name                 | Provided     | Requested    |
@@ -133,16 +127,16 @@ remapped.net.fabricmc:fabric-loader-293d29cc:0.13.1
     | org.gradle.dependency.bundling |              | external     |
     | org.gradle.jvm.environment     |              | standard-jvm |
     | org.gradle.jvm.version         |              | 16           |
-
 remapped.net.fabricmc:fabric-loader-293d29cc:0.13.1
 \--- runtimeClasspath
-
 A web-based, searchable dependency report is available by adding the --scan option.
-```
-### loom configs mentioning loader
-```
-+--- net.fabricmc:fabric-loader:0.16.7
-+--- remapped.net.fabricmc:fabric-loader-293d29cc:0.13.1
+[Incubating] Problems report is available at: file:///home/runner/work/simple-voice-chat-1.17.1/simple-voice-chat-1.17.1/build/reports/problems/problems-report.html
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+BUILD SUCCESSFUL in 9s
+1 actionable task: 1 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 ```
 ===== runServer smoke test failed (rc=1) =====
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
@@ -193,13 +187,41 @@ Note: Recompile with -Xlint:unchecked for details.
 
 > Task :fabric:runServer FAILED
 Disabled sync chunk writes in run/server.properties
-Exception in thread "main" java.lang.ExceptionInInitializerError
+[21:13:22] [ERROR] [FabricLoader/]: Uncaught exception in thread "main"
+java.lang.NoClassDefFoundError: net/fabricmc/accesswidener/AccessWidenerVisitor
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.locateGame(MinecraftGameProvider.java:221)
+	at net.fabricmc.loader.impl.launch.knot.Knot.createGameProvider(Knot.java:172)
+	at net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:125)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:71)
 	at net.fabricmc.loader.impl.launch.knot.KnotServer.main(KnotServer.java:23)
 	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86)
-Caused by: java.lang.IllegalStateException: duplicate fabric loader classes found on classpath: jar:file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/fabric-loader/0.16.7/18ce52a3228434ba2aa8c1936728ef4eacad64b8/fabric-loader-0.16.7.jar!/net/fabricmc/loader/api/FabricLoader.class, jar:file:/home/runner/work/simple-voice-chat-1.17.1/simple-voice-chat-1.17.1/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-loader-293d29cc/0.13.1/fabric-loader-293d29cc-0.13.1.jar!/net/fabricmc/loader/api/FabricLoader.class
-	at net.fabricmc.loader.impl.util.LoaderUtil.verifyClasspath(LoaderUtil.java:75)
-	at net.fabricmc.loader.impl.launch.knot.Knot.<clinit>(Knot.java:345)
-	... 2 more
+Caused by: java.lang.ClassNotFoundException: net.fabricmc.accesswidener.AccessWidenerVisitor
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:636)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:182)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:519)
+	... 6 more
+java.lang.NoClassDefFoundError: net/fabricmc/accesswidener/AccessWidenerVisitor
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.locateGame(MinecraftGameProvider.java:221)
+	at net.fabricmc.loader.impl.launch.knot.Knot.createGameProvider(Knot.java:172)
+	at net.fabricmc.loader.impl.launch.knot.Knot.init(Knot.java:125)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:71)
+	at net.fabricmc.loader.impl.launch.knot.KnotServer.main(KnotServer.java:23)
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86)
+	Suppressed: java.lang.NoClassDefFoundError: net/fabricmc/accesswidener/AccessWidenerVisitor
+		at net.fabricmc.loader.impl.launch.FabricLauncherBase$1.uncaughtException(FabricLauncherBase.java:101)
+		at java.base/java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1074)
+		at java.base/java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1069)
+		at java.base/java.lang.Thread.dispatchUncaughtException(Thread.java:1991)
+	Caused by: java.lang.ClassNotFoundException: net.fabricmc.accesswidener.AccessWidenerVisitor
+		at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:636)
+		at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:182)
+		at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:519)
+		... 4 more
+Caused by: java.lang.ClassNotFoundException: net.fabricmc.accesswidener.AccessWidenerVisitor
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:636)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:182)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:519)
+	... 6 more
 
 [Incubating] Problems report is available at: file:///home/runner/work/simple-voice-chat-1.17.1/simple-voice-chat-1.17.1/build/reports/problems/problems-report.html
 
@@ -221,5 +243,5 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD FAILED in 17s
+BUILD FAILED in 20s
 18 actionable tasks: 5 executed, 13 up-to-date
