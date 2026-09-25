@@ -47,7 +47,7 @@ public class AgcButton extends BooleanConfigButton {
     @Override
     public void renderButton(PoseStack poseStack, int i, int j, float f) {
         super.renderButton(poseStack, i, j, f);
-        if (isHoveredOrFocused()) {
+        if (isHovered() || isFocused()) {
             renderToolTip(poseStack, i, j);
         }
     }
