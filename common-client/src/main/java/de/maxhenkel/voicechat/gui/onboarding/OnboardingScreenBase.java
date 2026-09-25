@@ -1,9 +1,10 @@
 package de.maxhenkel.voicechat.gui.onboarding;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.util.FormattedCharSequence;
 
 import javax.annotation.Nullable;
@@ -11,9 +12,9 @@ import java.util.List;
 
 public abstract class OnboardingScreenBase extends Screen {
 
-    public static final Component NEXT = Component.translatable("message.voicechat.onboarding.next");
-    public static final Component BACK = Component.translatable("message.voicechat.onboarding.back");
-    public static final Component CANCEL = Component.translatable("message.voicechat.onboarding.cancel");
+    public static final Component NEXT = new TranslatableComponent("message.voicechat.onboarding.next");
+    public static final Component BACK = new TranslatableComponent("message.voicechat.onboarding.back");
+    public static final Component CANCEL = new TranslatableComponent("message.voicechat.onboarding.cancel");
 
     protected static final int TEXT_COLOR = 0xFFFFFFFF;
     protected static final int PADDING = 8;
@@ -43,19 +44,25 @@ public abstract class OnboardingScreenBase extends Screen {
         contentHeight = height - guiTop * 2;
     }
 
+    @Override
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        renderBackground(poseStack);
+        super.render(poseStack, mouseX, mouseY, partialTicks);
+    }
+
     @Nullable
     public Screen getNextScreen() {
         return null;
     }
 
     protected void addPositiveButton(Component text, Button.OnPress onPress) {
-        Button nextButton = Button.builder(text, onPress).bounds(guiLeft + contentWidth / 2 + PADDING / 2, guiTop + contentHeight - BUTTON_HEIGHT, contentWidth / 2 - PADDING / 2, BUTTON_HEIGHT).build();
+        Button nextButton = new Button(guiLeft + contentWidth / 2 + PADDING / 2, guiTop + contentHeight - BUTTON_HEIGHT, contentWidth / 2 - PADDING / 2, BUTTON_HEIGHT, text, onPress);
         addRenderableWidget(nextButton);
     }
 
     protected void addNextButton() {
         addPositiveButton(NEXT, button -> {
-            minecraft.gui.setScreen(getNextScreen());
+            minecraft.setScreen(getNextScreen());
         });
     }
 
@@ -64,9 +71,9 @@ public abstract class OnboardingScreenBase extends Screen {
         if (previous instanceof OnboardingScreenBase) {
             text = BACK;
         }
-        Button cancel = Button.builder(text, button -> {
-            minecraft.gui.setScreen(previous);
-        }).bounds(guiLeft, guiTop + contentHeight - BUTTON_HEIGHT, big ? contentWidth : contentWidth / 2 - PADDING / 2, BUTTON_HEIGHT).build();
+        Button cancel = new Button(guiLeft, guiTop + contentHeight - BUTTON_HEIGHT, big ? contentWidth : contentWidth / 2 - PADDING / 2, BUTTON_HEIGHT, text, button -> {
+            minecraft.setScreen(previous);
+        });
         addRenderableWidget(cancel);
     }
 
@@ -74,17 +81,17 @@ public abstract class OnboardingScreenBase extends Screen {
         addBackOrCancelButton(false);
     }
 
-    protected void renderTitle(GuiGraphicsExtractor guiGraphics, Component titleComponent) {
+    protected void renderTitle(PoseStack poseStack, Component titleComponent) {
         int titleWidth = font.width(titleComponent);
-        guiGraphics.text(font, titleComponent.getVisualOrderText(), width / 2 - titleWidth / 2, guiTop, TEXT_COLOR, true);
+        font.drawShadow(poseStack, titleComponent.getVisualOrderText(), width / 2 - titleWidth / 2, guiTop, TEXT_COLOR);
     }
 
-    protected void renderMultilineText(GuiGraphicsExtractor guiGraphics, Component textComponent) {
+    protected void renderMultilineText(PoseStack poseStack, Component textComponent) {
         List<FormattedCharSequence> text = font.split(textComponent, contentWidth);
 
         for (int i = 0; i < text.size(); i++) {
             FormattedCharSequence line = text.get(i);
-            guiGraphics.text(font, line, width / 2 - font.width(line) / 2, guiTop + font.lineHeight + 20 + i * (font.lineHeight + 1), TEXT_COLOR, true);
+            font.drawShadow(poseStack, line, width / 2 - font.width(line) / 2, guiTop + font.lineHeight + 20 + i * (font.lineHeight + 1), TEXT_COLOR);
         }
     }
 

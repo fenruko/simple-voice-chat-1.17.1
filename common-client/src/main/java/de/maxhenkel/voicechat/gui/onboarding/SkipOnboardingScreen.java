@@ -1,17 +1,18 @@
 package de.maxhenkel.voicechat.gui.onboarding;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 
 public class SkipOnboardingScreen extends OnboardingScreenBase {
 
-    private static final Component TITLE = Component.translatable("message.voicechat.onboarding.skip.title").withStyle(ChatFormatting.BOLD);
-    private static final Component DESCRIPTION = Component.translatable("message.voicechat.onboarding.skip.description");
-    private static final Component CONFIRM = Component.translatable("message.voicechat.onboarding.confirm");
+    private static final Component TITLE = new TranslatableComponent("message.voicechat.onboarding.skip.title").withStyle(ChatFormatting.BOLD);
+    private static final Component DESCRIPTION = new TranslatableComponent("message.voicechat.onboarding.skip.description");
+    private static final Component CONFIRM = new TranslatableComponent("message.voicechat.onboarding.confirm");
 
     public SkipOnboardingScreen(@Nullable Screen previous) {
         super(TITLE, previous);
@@ -31,10 +32,10 @@ public class SkipOnboardingScreen extends OnboardingScreenBase {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
-        renderTitle(guiGraphics, TITLE);
-        renderMultilineText(guiGraphics, DESCRIPTION);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        super.render(poseStack, mouseX, mouseY, partialTicks);
+        renderTitle(poseStack, TITLE);
+        renderMultilineText(poseStack, DESCRIPTION);
     }
 
 }

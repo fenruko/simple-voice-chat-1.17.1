@@ -12,7 +12,7 @@ import de.maxhenkel.voicechat.net.NetManager;
 import de.maxhenkel.voicechat.permission.FabricPermissionManager;
 import de.maxhenkel.voicechat.permission.PermissionManager;
 import net.fabricmc.api.EnvType;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -115,7 +115,7 @@ public class FabricCommonCompatibilityManager extends CommonCompatibilityManager
 
     @Override
     public void onRegisterServerCommands(Consumer<CommandDispatcher<CommandSourceStack>> onRegisterServerCommands) {
-        CommandRegistrationCallback.EVENT.register((dispatcher, context, commandSelection) -> onRegisterServerCommands.accept(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> onRegisterServerCommands.accept(dispatcher));
     }
 
     private FabricNetManager netManager;

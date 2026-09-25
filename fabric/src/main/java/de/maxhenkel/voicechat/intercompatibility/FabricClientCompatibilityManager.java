@@ -6,20 +6,15 @@ import de.maxhenkel.voicechat.events.*;
 import de.maxhenkel.voicechat.mixin.ConnectionAccessor;
 import de.maxhenkel.voicechat.resourcepacks.IPackRepository;
 import de.maxhenkel.voicechat.voice.client.ClientVoicechatConnection;
-import de.maxhenkel.voicechat.voice.client.IconFeatureRenderer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.event.Event;
-import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.Connection;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.RepositorySource;
 
 import java.net.SocketAddress;
@@ -27,29 +22,19 @@ import java.util.function.Consumer;
 
 public class FabricClientCompatibilityManager extends ClientCompatibilityManager {
 
-    private static final Identifier VOICE_CHAT_ICON_LAYER = Identifier.fromNamespaceAndPath(Voicechat.MODID, "hud");
-    private static final Identifier EARLY_JOIN = Identifier.fromNamespaceAndPath(Voicechat.MODID, "early_join");
+    private static final ResourceLocation EARLY_JOIN = new ResourceLocation(Voicechat.MODID, "early_join");
 
     private static final Minecraft mc = Minecraft.getInstance();
-
-    public FabricClientCompatibilityManager() {
-        HudElementRegistry.attachElementBefore(VanillaHudElements.MOB_EFFECTS, VOICE_CHAT_ICON_LAYER, this::onRenderVoiceChatLayer);
-        ClientPlayConnectionEvents.JOIN.addPhaseOrdering(EARLY_JOIN, Event.DEFAULT_PHASE);
-        FeatureRendererRegistry.register(IconFeatureRenderer.TYPE, IconFeatureRenderer::new);
-    }
-
-    private void onRenderVoiceChatLayer(GuiGraphicsExtractor guiGraphics, DeltaTracker deltaTracker) {
-        RenderEvents.RENDER_HUD.invoker().accept(guiGraphics);
-    }
 
     @Override
     public void onRenderNamePlate(RenderNameplateEvent onRenderNamePlate) {
         RenderEvents.RENDER_NAMEPLATE.register(onRenderNamePlate);
+        ClientPlayConnectionEvents.JOIN.addPhaseOrdering(EARLY_JOIN, Event.DEFAULT_PHASE);
     }
 
     @Override
     public void onRenderHUD(RenderHUDEvent onRenderHUD) {
-        RenderEvents.RENDER_HUD.register(guiGraphics -> onRenderHUD.render(guiGraphics, mc.getDeltaTracker().getRealtimeDeltaTicks()));
+        RenderEvents.RENDER_HUD.register(poseStack -> onRenderHUD.render(poseStack, mc.getFrameTime()));
     }
 
     @Override
@@ -74,7 +59,7 @@ public class FabricClientCompatibilityManager extends ClientCompatibilityManager
 
     @Override
     public InputConstants.Key getBoundKeyOf(KeyMapping keyBinding) {
-        return KeyMappingHelper.getBoundKeyOf(keyBinding);
+        return KeyBindingHelper.getBoundKeyOf(keyBinding);
     }
 
     @Override
@@ -84,7 +69,7 @@ public class FabricClientCompatibilityManager extends ClientCompatibilityManager
 
     @Override
     public KeyMapping registerKeyBinding(KeyMapping keyBinding) {
-        return KeyMappingHelper.registerKeyMapping(keyBinding);
+        return KeyBindingHelper.registerKeyBinding(keyBinding);
     }
 
     @Override
@@ -134,8 +119,8 @@ public class FabricClientCompatibilityManager extends ClientCompatibilityManager
     }
 
     @Override
-    public void addResourcePackSource(RepositorySource repositorySource) {
-        IPackRepository repository = (IPackRepository) mc.getResourcePackRepository();
+    public void addResourcePackSource(PackRepository packRepository, RepositorySource repositorySource) {
+        IPackRepository repository = (IPackRepository) packRepository;
         repository.voicechat$addSource(repositorySource);
     }
 }

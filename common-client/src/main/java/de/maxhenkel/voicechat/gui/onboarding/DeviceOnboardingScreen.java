@@ -1,7 +1,8 @@
 package de.maxhenkel.voicechat.gui.onboarding;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.gui.audiodevice.AudioDeviceList;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -13,6 +14,7 @@ public abstract class DeviceOnboardingScreen extends OnboardingScreenBase {
 
     public DeviceOnboardingScreen(Component title, @Nullable Screen previous) {
         super(title, previous);
+        minecraft = Minecraft.getInstance();
     }
 
     public abstract AudioDeviceList createAudioDeviceList(int width, int height, int top);
@@ -22,7 +24,7 @@ public abstract class DeviceOnboardingScreen extends OnboardingScreenBase {
         super.init();
 
         if (deviceList != null) {
-            deviceList.updateSize(width, contentHeight - font.lineHeight - BUTTON_HEIGHT - PADDING * 2, 0, guiTop + font.lineHeight + PADDING);
+            deviceList.updateSize(width, contentHeight - font.lineHeight - BUTTON_HEIGHT - PADDING * 2, guiTop + font.lineHeight + PADDING);
         } else {
             deviceList = createAudioDeviceList(width, contentHeight - font.lineHeight - BUTTON_HEIGHT - PADDING * 2, guiTop + font.lineHeight + PADDING);
         }
@@ -36,10 +38,9 @@ public abstract class DeviceOnboardingScreen extends OnboardingScreenBase {
     public abstract Screen getNextScreen();
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
-        deviceList.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
-        renderTitle(guiGraphics, title);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        super.render(poseStack, mouseX, mouseY, partialTicks);
+        deviceList.render(poseStack, mouseX, mouseY, partialTicks);
+        renderTitle(poseStack, title);
     }
-
 }

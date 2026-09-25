@@ -5,15 +5,11 @@ import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.api.VoicechatPlugin;
 import de.maxhenkel.voicechat.events.PlayerEvents;
 import de.maxhenkel.voicechat.events.ServerVoiceChatEvents;
-import de.maxhenkel.voicechat.events.VanishEvents;
-import de.maxhenkel.voicechat.integration.vanish.VanishIntegration;
 import de.maxhenkel.voicechat.net.NetManager;
 import de.maxhenkel.voicechat.net.QuiltNetManager;
 import de.maxhenkel.voicechat.permission.PermissionManager;
 import de.maxhenkel.voicechat.permission.QuiltPermissionManager;
 import net.fabricmc.api.EnvType;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,6 +17,8 @@ import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
+import org.quiltmc.qsl.command.api.CommandRegistrationCallback;
+import org.quiltmc.qsl.lifecycle.api.event.ServerLifecycleEvents;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -81,12 +79,12 @@ public class QuiltCommonCompatibilityManager extends CommonCompatibilityManager 
 
     @Override
     public void onServerStarting(Consumer<MinecraftServer> onServerStarting) {
-        ServerLifecycleEvents.SERVER_STARTED.register(onServerStarting::accept);
+        ServerLifecycleEvents.READY.register(onServerStarting::accept);
     }
 
     @Override
     public void onServerStopping(Consumer<MinecraftServer> onServerStopping) {
-        ServerLifecycleEvents.SERVER_STOPPING.register(onServerStopping::accept);
+        ServerLifecycleEvents.STOPPING.register(onServerStopping::accept);
     }
 
     @Override
@@ -101,12 +99,12 @@ public class QuiltCommonCompatibilityManager extends CommonCompatibilityManager 
 
     @Override
     public void onPlayerHide(BiConsumer<ServerPlayer, ServerPlayer> onPlayerHide) {
-        VanishEvents.ON_VANISH.register(onPlayerHide);
+        // Do nothing for now
     }
 
     @Override
     public void onPlayerShow(BiConsumer<ServerPlayer, ServerPlayer> onPlayerShow) {
-        VanishEvents.ON_UNVANISH.register(onPlayerShow);
+        // Do nothing for now
     }
 
     @Override
@@ -116,7 +114,7 @@ public class QuiltCommonCompatibilityManager extends CommonCompatibilityManager 
 
     @Override
     public void onRegisterServerCommands(Consumer<CommandDispatcher<CommandSourceStack>> onRegisterServerCommands) {
-        CommandRegistrationCallback.EVENT.register((dispatcher, context, commandSelection) -> onRegisterServerCommands.accept(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, integrated, dedicated) -> onRegisterServerCommands.accept(dispatcher));
     }
 
     private QuiltNetManager netManager;
@@ -156,6 +154,6 @@ public class QuiltCommonCompatibilityManager extends CommonCompatibilityManager 
 
     @Override
     public boolean canSee(ServerPlayer player, ServerPlayer other) {
-        return VanishIntegration.canSee(player, other);
+        return true;
     }
 }

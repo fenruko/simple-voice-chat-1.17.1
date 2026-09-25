@@ -1,23 +1,23 @@
 package de.maxhenkel.voicechat.gui.tooltips;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.gui.widgets.ImageButton;
 import de.maxhenkel.voicechat.voice.client.ClientPlayerStateManager;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.util.FormattedCharSequence;
 
-import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DisableTooltipSupplier implements ImageButton.TooltipSupplier {
 
-    public static final Component DISABLE_ENABLED = Component.translatable("message.voicechat.disable.enabled");
-    public static final Component DISABLE_DISABLED = Component.translatable("message.voicechat.disable.disabled");
-    public static final Component DISABLE_NO_SPEAKER = Component.translatable("message.voicechat.disable.speaker_unavailable");
+    public static final TranslatableComponent DISABLE_ENABLED = new TranslatableComponent("message.voicechat.disable.enabled");
+    public static final TranslatableComponent DISABLE_DISABLED = new TranslatableComponent("message.voicechat.disable.disabled");
+    public static final TranslatableComponent DISABLE_NO_SPEAKER = new TranslatableComponent("message.voicechat.disable.speaker_unavailable");
 
     private final Screen screen;
     private final ClientPlayerStateManager stateManager;
-    @Nullable
-    private State lastState;
 
     public DisableTooltipSupplier(Screen screen, ClientPlayerStateManager stateManager) {
         this.screen = screen;
@@ -25,38 +25,18 @@ public class DisableTooltipSupplier implements ImageButton.TooltipSupplier {
     }
 
     @Override
-    public void updateTooltip(ImageButton button) {
-        State state = getState();
-        if (state != lastState) {
-            lastState = state;
-            button.setTooltip(Tooltip.create(state.getComponent()));
-        }
-    }
+    public void onTooltip(ImageButton button, PoseStack matrices, int mouseX, int mouseY) {
+        List<FormattedCharSequence> tooltip = new ArrayList<>();
 
-    private State getState() {
         if (!stateManager.canEnable()) {
-            return State.NO_SPEAKER;
+            tooltip.add(DISABLE_NO_SPEAKER.getVisualOrderText());
         } else if (stateManager.isDisabled()) {
-            return State.DISABLED;
+            tooltip.add(DISABLE_ENABLED.getVisualOrderText());
         } else {
-            return State.ENABLED;
-        }
-    }
-
-    private enum State {
-        ENABLED(DISABLE_DISABLED),
-        DISABLED(DISABLE_ENABLED),
-        NO_SPEAKER(DISABLE_NO_SPEAKER);
-
-        private final Component component;
-
-        State(Component component) {
-            this.component = component;
+            tooltip.add(DISABLE_DISABLED.getVisualOrderText());
         }
 
-        public Component getComponent() {
-            return component;
-        }
+        screen.renderTooltip(matrices, tooltip, mouseX, mouseY);
     }
 
 }

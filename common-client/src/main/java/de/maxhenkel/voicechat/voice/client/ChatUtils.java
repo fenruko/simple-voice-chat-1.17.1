@@ -2,20 +2,19 @@ package de.maxhenkel.voicechat.voice.client;
 
 import de.maxhenkel.voicechat.intercompatibility.CommonCompatibilityManager;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
-import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.*;
 
 import javax.annotation.Nullable;
 
 public class ChatUtils {
 
     public static void sendModErrorMessage(String translationKey, @Nullable String errorMessage) {
-        MutableComponent error = createModMessage(Component.translatable(translationKey).withStyle(ChatFormatting.RED)).withStyle(style -> {
+        MutableComponent error = createModMessage(new TranslatableComponent(translationKey).withStyle(ChatFormatting.RED)).withStyle(style -> {
             if (errorMessage != null) {
-                return style.withHoverEvent(new HoverEvent.ShowText(Component.literal(errorMessage).withStyle(ChatFormatting.RED)));
+                return style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponent(errorMessage).withStyle(ChatFormatting.RED)));
             }
             return style;
         });
@@ -35,14 +34,17 @@ public class ChatUtils {
     }
 
     public static MutableComponent createModMessage(Component message) {
-        return Component.empty()
-                .append(ComponentUtils.wrapInSquareBrackets(Component.literal(CommonCompatibilityManager.INSTANCE.getModName())).withStyle(ChatFormatting.GREEN))
+        return new TextComponent("")
+                .append(ComponentUtils.wrapInSquareBrackets(new TextComponent(CommonCompatibilityManager.INSTANCE.getModName())).withStyle(ChatFormatting.GREEN))
                 .append(" ")
                 .append(message);
     }
 
     public static void sendPlayerMessage(Component component) {
-        Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(component);
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null) {
+            return;
+        }
+        player.sendMessage(component, Util.NIL_UUID);
     }
-
 }

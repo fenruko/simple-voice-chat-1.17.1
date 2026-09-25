@@ -1,75 +1,77 @@
 package de.maxhenkel.voicechat.gui.onboarding;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.VoicechatClient;
 import de.maxhenkel.voicechat.gui.VoiceChatScreen;
 import de.maxhenkel.voicechat.intercompatibility.ClientCompatibilityManager;
 import de.maxhenkel.voicechat.voice.client.KeyEvents;
 import de.maxhenkel.voicechat.voice.client.MicrophoneActivationType;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 
 public class FinalOnboardingScreen extends OnboardingScreenBase {
 
-    private static final Component TITLE = Component.translatable("message.voicechat.onboarding.final").withStyle(ChatFormatting.BOLD);
-    private static final Component FINISH_SETUP = Component.translatable("message.voicechat.onboarding.final.finish_setup");
+    private static final Component TITLE = new TranslatableComponent("message.voicechat.onboarding.final").withStyle(ChatFormatting.BOLD);
+    private static final Component FINISH_SETUP = new TranslatableComponent("message.voicechat.onboarding.final.finish_setup");
 
     protected Component description;
 
     public FinalOnboardingScreen(@Nullable Screen previous) {
         super(TITLE, previous);
-        description = Component.empty();
+        description = new TextComponent("");
     }
 
     @Override
     protected void init() {
         super.init();
 
-        MutableComponent text = Component.translatable("message.voicechat.onboarding.final.description.success",
+        MutableComponent text = new TranslatableComponent("message.voicechat.onboarding.final.description.success",
                 KeyEvents.KEY_VOICE_CHAT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BOLD, ChatFormatting.UNDERLINE)
         ).append("\n\n");
 
         if (VoicechatClient.CLIENT_CONFIG.microphoneActivationType.get().equals(MicrophoneActivationType.PTT)) {
-            text = text.append(Component.translatable("message.voicechat.onboarding.final.description.ptt",
+            text = text.append(new TranslatableComponent("message.voicechat.onboarding.final.description.ptt",
                     KeyEvents.KEY_PTT.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BOLD, ChatFormatting.UNDERLINE)
             ).withStyle(ChatFormatting.BOLD)).append("\n\n");
         } else {
-            text = text.append(Component.translatable("message.voicechat.onboarding.final.description.voice",
+            text = text.append(new TranslatableComponent("message.voicechat.onboarding.final.description.voice",
                     KeyEvents.KEY_MUTE.getTranslatedKeyMessage().copy().withStyle(ChatFormatting.BOLD, ChatFormatting.UNDERLINE)
             ).withStyle(ChatFormatting.BOLD)).append("\n\n");
         }
 
-        description = text.append(Component.translatable("message.voicechat.onboarding.final.description.configuration"));
+        description = text.append(new TranslatableComponent("message.voicechat.onboarding.final.description.configuration"));
 
         addBackOrCancelButton();
         addPositiveButton(FINISH_SETUP, button -> OnboardingManager.finishOnboarding());
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        super.extractRenderState(guiGraphics, mouseX, mouseY, partialTicks);
-        renderTitle(guiGraphics, TITLE);
-        renderMultilineText(guiGraphics, description);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        super.render(poseStack, mouseX, mouseY, partialTicks);
+        renderTitle(poseStack, TITLE);
+        renderMultilineText(poseStack, description);
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
-        if (keyEvent.isEscape()) {
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == InputConstants.KEY_ESCAPE) {
             OnboardingManager.finishOnboarding();
             return true;
         }
-        if (keyEvent.key() == ClientCompatibilityManager.INSTANCE.getBoundKeyOf(KeyEvents.KEY_VOICE_CHAT).getValue()) {
+        if (keyCode == ClientCompatibilityManager.INSTANCE.getBoundKeyOf(KeyEvents.KEY_VOICE_CHAT).getValue()) {
             OnboardingManager.finishOnboarding();
-            minecraft.gui.setScreen(new VoiceChatScreen());
+            minecraft.setScreen(new VoiceChatScreen());
             return true;
         }
 
-        return super.keyPressed(keyEvent);
+        return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

@@ -5,13 +5,15 @@ import de.maxhenkel.voicechat.voice.client.ClientManager;
 import de.maxhenkel.voicechat.voice.client.ClientVoicechat;
 import de.maxhenkel.voicechat.voice.client.SoundManager;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 
 public class VoiceSoundSlider extends DebouncedSlider {
 
     protected float maxVolume;
 
     public VoiceSoundSlider(int x, int y, int width, int height, float maxVolume) {
-        super(x, y, width, height, Component.empty(), VoicechatClient.CLIENT_CONFIG.voiceChatVolume.get().floatValue() / maxVolume);
+        super(x, y, width, height, TextComponent.EMPTY, VoicechatClient.CLIENT_CONFIG.voiceChatVolume.get().floatValue() / maxVolume);
         this.maxVolume = maxVolume;
         updateMessage();
     }
@@ -39,7 +41,7 @@ public class VoiceSoundSlider extends DebouncedSlider {
     }
 
     public Component getMsg() {
-        return Component.translatable("message.voicechat.voice_chat_volume", Math.round(value * maxVolume * 100F) + "%");
+        return new TranslatableComponent("message.voicechat.voice_chat_volume", Math.round(value * maxVolume * 100F) + "%");
     }
 
     @Override

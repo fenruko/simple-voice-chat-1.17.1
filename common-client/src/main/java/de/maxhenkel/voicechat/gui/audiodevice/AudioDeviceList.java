@@ -5,10 +5,10 @@ import de.maxhenkel.voicechat.gui.widgets.ListScreenListBase;
 import de.maxhenkel.voicechat.voice.client.ClientManager;
 import de.maxhenkel.voicechat.voice.client.ClientVoicechat;
 import de.maxhenkel.voicechat.voice.client.SoundManager;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 
 import javax.annotation.Nullable;
@@ -21,7 +21,7 @@ public abstract class AudioDeviceList extends ListScreenListBase<AudioDeviceEntr
     public static final int CELL_HEIGHT = 36;
 
     @Nullable
-    protected Identifier icon;
+    protected ResourceLocation icon;
     @Nullable
     protected Component defaultDeviceText;
 
@@ -30,15 +30,20 @@ public abstract class AudioDeviceList extends ListScreenListBase<AudioDeviceEntr
 
     public AudioDeviceList(int width, int height, int top) {
         super(width, height, top, CELL_HEIGHT);
+        setRenderBackground(false);
+        setRenderTopAndBottom(false);
     }
 
     @Override
-    public boolean mouseClicked(MouseButtonEvent evt, boolean bl) {
-        AudioDeviceEntry entry = getEntryAtPosition(evt.x(), evt.y());
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (super.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        AudioDeviceEntry entry = getEntryAtPosition(mouseX, mouseY);
         if (entry == null) {
             return false;
         }
-        if (!isHovered()) {
+        if (getHovered() != entry) {
             return false;
         }
         if (!isSelected(entry.getDevice())) {
@@ -46,7 +51,7 @@ public abstract class AudioDeviceList extends ListScreenListBase<AudioDeviceEntr
             onSelect(entry);
             return true;
         }
-        return super.mouseClicked(evt, bl);
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     protected void onSelect(AudioDeviceEntry entry) {
@@ -72,7 +77,7 @@ public abstract class AudioDeviceList extends ListScreenListBase<AudioDeviceEntr
         );
     }
 
-    public abstract AudioDeviceEntry createAudioDeviceEntry(String device, Component name, @Nullable Identifier icon, Supplier<Boolean> isSelected);
+    public abstract AudioDeviceEntry createAudioDeviceEntry(String device, Component name, @Nullable ResourceLocation icon, Supplier<Boolean> isSelected);
 
     public boolean isSelected(String name) {
         if (configEntry == null) {
@@ -85,7 +90,7 @@ public abstract class AudioDeviceList extends ListScreenListBase<AudioDeviceEntr
         if (device.isEmpty() && defaultDeviceText != null) {
             return defaultDeviceText;
         }
-        return Component.literal(SoundManager.cleanDeviceName(device));
+        return new TextComponent(SoundManager.cleanDeviceName(device));
     }
 
     public boolean isEmpty() {

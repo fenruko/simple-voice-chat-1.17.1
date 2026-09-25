@@ -1,6 +1,6 @@
 package de.maxhenkel.voicechat.gui.group;
 
-import de.maxhenkel.voicechat.gui.EnterPasswordScreen;
+import de.maxhenkel.voicechat.gui.widgets.ListScreenBase;
 import de.maxhenkel.voicechat.gui.widgets.ListScreenListBase;
 import de.maxhenkel.voicechat.net.ClientServerNetManager;
 import de.maxhenkel.voicechat.net.JoinGroupPacket;
@@ -8,38 +8,20 @@ import de.maxhenkel.voicechat.voice.client.ClientManager;
 import de.maxhenkel.voicechat.voice.common.ClientGroup;
 import de.maxhenkel.voicechat.voice.common.PlayerState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.MouseButtonEvent;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.sounds.SoundEvents;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class JoinGroupList extends ListScreenListBase<JoinGroupEntry> {
 
-    protected final Screen parent;
+    protected final ListScreenBase parent;
 
-    public JoinGroupList(Screen parent, int width, int height, int top, int itemSize) {
-        super(width, height, top, itemSize);
+    public JoinGroupList(ListScreenBase parent, int width, int height, int top, int size) {
+        super(width, height, top, size);
         this.parent = parent;
+        setRenderBackground(false);
+        setRenderTopAndBottom(false);
         updateGroups();
-    }
-
-    @Override
-    public boolean mouseClicked(MouseButtonEvent evt, boolean bl) {
-        JoinGroupEntry entry = getEntryAtPosition(evt.x(), evt.y());
-        if (entry == null) {
-            return false;
-        }
-        ClientGroup group = entry.getGroup().getGroup();
-        minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1F));
-        if (group.hasPassword()) {
-            minecraft.gui.setScreen(new EnterPasswordScreen(group));
-        } else {
-            ClientServerNetManager.sendToServer(new JoinGroupPacket(group.getId(), null));
-        }
-        return true;
     }
 
     private void updateGroups() {
@@ -63,7 +45,7 @@ public class JoinGroupList extends ListScreenListBase<JoinGroupEntry> {
     }
 
     public static void update() {
-        if (Minecraft.getInstance().gui.screen() instanceof JoinGroupScreen joinGroupScreen) {
+        if (Minecraft.getInstance().screen instanceof JoinGroupScreen joinGroupScreen) {
             joinGroupScreen.groupList.updateGroups();
         }
     }

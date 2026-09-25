@@ -17,8 +17,7 @@ import de.maxhenkel.voicechat.voice.server.Server;
 import io.netty.channel.local.LocalAddress;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -67,7 +66,7 @@ public class ClientManager {
             }
         });
 
-        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().secretChannel, (player, packet) -> authenticate(packet));
+        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().secretChannel, (client, handler, packet) -> authenticate(packet));
     }
 
     private void authenticate(SecretPacket secretPacket) {
@@ -168,9 +167,7 @@ public class ClientManager {
         } catch (Exception e) {
             Voicechat.LOGGER.error("Failed to change voice chat port", e);
         }
-        Component portComponent = ComponentUtils.copyOnClickText(String.valueOf(server.getPort()));
-        Minecraft mc = Minecraft.getInstance();
-        mc.execute(() -> mc.gui.hud.getChat().addClientSystemMessage(Component.translatable("message.voicechat.server_port", portComponent)));
+        Minecraft.getInstance().gui.getChat().addMessage(new TranslatableComponent("message.voicechat.server_port", server.getPort()));
     }
 
     @Nullable

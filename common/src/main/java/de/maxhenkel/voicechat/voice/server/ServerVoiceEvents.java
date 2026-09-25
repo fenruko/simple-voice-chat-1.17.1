@@ -10,7 +10,10 @@ import de.maxhenkel.voicechat.net.SecretPacket;
 import de.maxhenkel.voicechat.plugins.PluginManager;
 import de.maxhenkel.voicechat.voice.common.Secret;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -41,12 +44,12 @@ public class ServerVoiceEvents {
         CommonCompatibilityManager.INSTANCE.onServerVoiceChatDisconnected(this::serverVoiceChatDisconnected);
         CommonCompatibilityManager.INSTANCE.onPlayerCompatibilityCheckSucceeded(this::playerCompatibilityCheckSucceeded);
 
-        CommonCompatibilityManager.INSTANCE.getNetManager().requestSecretChannel.setServerListener((player, packet) -> {
+        CommonCompatibilityManager.INSTANCE.getNetManager().requestSecretChannel.setServerListener((server, player, handler, packet) -> {
             Voicechat.LOGGER.info("Received secret request of {} ({})", player.getName().getString(), packet.getCompatibilityVersion());
             clientCompatibilities.put(player.getUUID(), packet.getCompatibilityVersion());
             if (packet.getCompatibilityVersion() != Voicechat.COMPATIBILITY_VERSION) {
                 Voicechat.LOGGER.warn("Connected client {} has incompatible voice chat version (server={}, client={})", player.getName().getString(), Voicechat.COMPATIBILITY_VERSION, packet.getCompatibilityVersion());
-                player.sendSystemMessage(getIncompatibleMessage(packet.getCompatibilityVersion()));
+                player.sendMessage(getIncompatibleMessage(packet.getCompatibilityVersion()), Util.NIL_UUID);
             } else {
                 initializePlayerConnection(player);
             }
@@ -55,12 +58,11 @@ public class ServerVoiceEvents {
 
     public Component getIncompatibleMessage(int clientCompatibilityVersion) {
         if (clientCompatibilityVersion <= 6) {
-            return Component.literal(Voicechat.TRANSLATIONS.voicechatNotCompatibleMessage.get().formatted(BuildConstants.MOD_COMPATIBLE_VERSION, CommonCompatibilityManager.INSTANCE.getModName()));
+            return new TextComponent(Voicechat.TRANSLATIONS.voicechatNotCompatibleMessage.get().formatted(BuildConstants.MOD_COMPATIBLE_VERSION, CommonCompatibilityManager.INSTANCE.getModName()));
         } else {
-            return Component.translatableWithFallback("message.voicechat.incompatible_version",
-                    "Your voice chat client version is not compatible with the server-side version.\nPlease install version %s of %s.",
-                    Component.literal(BuildConstants.MOD_COMPATIBLE_VERSION).withStyle(ChatFormatting.BOLD),
-                    Component.literal(CommonCompatibilityManager.INSTANCE.getModName()).withStyle(ChatFormatting.BOLD));
+            return new TranslatableComponent("message.voicechat.incompatible_version",
+                    new TextComponent(BuildConstants.MOD_COMPATIBLE_VERSION).withStyle(ChatFormatting.BOLD),
+                    new TextComponent(CommonCompatibilityManager.INSTANCE.getModName()).withStyle(ChatFormatting.BOLD));
         }
     }
 
@@ -104,10 +106,6 @@ public class ServerVoiceEvents {
             return;
         }
 
-        // TODO Add back when they re-add P2P
-        // Only does something if hosting P2P
-        // WebRtcUtils.addUncheckedRtcConnection(server, player);
-
         boolean dedicated = CommonCompatibilityManager.INSTANCE.isDedicatedServer();
         String configuredVoiceHost = dedicated ? Voicechat.SERVER_CONFIG.voiceHost.get() : "";
         String voiceHost = PluginManager.instance().getVoiceHost(player, configuredVoiceHost);
@@ -128,22 +126,22 @@ public class ServerVoiceEvents {
             return;
         }
 
-        Timer timer = new Timer("%s-login-timer".formatted(serverPlayer.getGameProfile().name()), true);
+        Timer timer = new Timer("%s-login-timer".formatted(serverPlayer.getGameProfile().getName()), true);
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
                 timer.cancel();
                 timer.purge();
-                if (!serverPlayer.level().getServer().isRunning()) {
+                if (!serverPlayer.server.isRunning()) {
                     return;
                 }
-                if (!serverPlayer.connection.isAcceptingMessages()) {
+                if (!serverPlayer.connection.connection.isConnected()) {
                     return;
                 }
                 if (!isCompatible(serverPlayer)) {
-                    CommonCompatibilityManager.INSTANCE.execute(serverPlayer.level().getServer(), () -> {
+                    CommonCompatibilityManager.INSTANCE.execute(serverPlayer.server, () -> {
                         serverPlayer.connection.disconnect(
-                                Component.literal(Voicechat.TRANSLATIONS.forceVoicechatKickMessage.get().formatted(
+                                new TextComponent(Voicechat.TRANSLATIONS.forceVoicechatKickMessage.get().formatted(
                                         CommonCompatibilityManager.INSTANCE.getModName(),
                                         CommonCompatibilityManager.INSTANCE.getModVersion()
                                 )));

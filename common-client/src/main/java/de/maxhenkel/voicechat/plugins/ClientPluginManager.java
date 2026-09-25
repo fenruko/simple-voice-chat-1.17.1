@@ -10,7 +10,6 @@ import de.maxhenkel.voicechat.plugins.impl.events.*;
 import de.maxhenkel.voicechat.voice.client.camera.CameraState;
 import de.maxhenkel.voicechat.voice.common.AudioUtils;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -50,12 +49,6 @@ public class ClientPluginManager {
     }
 
     public ClientVoicechatSocket getClientSocketImplementation() {
-        // TODO Maybe add a separate event or pass the socket implementation to the event
-        // TODO Add back when they re-add P2P
-        /*if (WebRtcUtils.isConnectedViaWebRtc()) {
-            Voicechat.LOGGER.debug("Using WebRTC voicechat client socket implementation");
-            return new WebRTCVoicechatClientSocketImpl();
-        }*/
         ClientVoicechatInitializationEventImpl event = new ClientVoicechatInitializationEventImpl();
         pluginManager.dispatchEvent(ClientVoicechatInitializationEvent.class, event);
         ClientVoicechatSocket socket = event.getSocketImplementation();
@@ -142,16 +135,16 @@ public class ClientPluginManager {
     @Nullable
     public CameraState onUpdateCameraPosition() {
         cachedUpdateCameraPositionEvent.setPos(null);
-        cachedUpdateCameraPositionEvent.getForward().set(0F);
-        cachedUpdateCameraPositionEvent.getUp().set(0F);
+        cachedUpdateCameraPositionEvent.getForward().set(0F, 0F, 0F);
+        cachedUpdateCameraPositionEvent.getUp().set(0F, 0F, 0F);
         pluginManager.dispatchEvent(UpdateCameraPositionEvent.class, cachedUpdateCameraPositionEvent);
         if (cachedUpdateCameraPositionEvent.getPos() == null) {
             return null;
         }
         return new CameraState(
                 cachedUpdateCameraPositionEvent.getPos(),
-                new Vector3f(cachedUpdateCameraPositionEvent.getForward()),
-                new Vector3f(cachedUpdateCameraPositionEvent.getUp()),
+                cachedUpdateCameraPositionEvent.getForward().copy(),
+                cachedUpdateCameraPositionEvent.getUp().copy(),
                 cachedUpdateCameraPositionEvent.getYRot(),
                 null,
                 cachedUpdateCameraPositionEvent.getPos(),

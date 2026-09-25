@@ -6,8 +6,8 @@ import de.maxhenkel.voicechat.gui.widgets.ListScreenListBase;
 import de.maxhenkel.voicechat.plugins.impl.VolumeCategoryImpl;
 import de.maxhenkel.voicechat.voice.client.ClientManager;
 import de.maxhenkel.voicechat.voice.common.PlayerState;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.Util;
 
 import java.util.*;
 
@@ -17,16 +17,18 @@ public class AdjustVolumeList extends ListScreenListBase<VolumeEntry> {
     protected final List<VolumeEntry> entries;
     protected String filter;
 
-    public AdjustVolumeList(int width, int height, int top, int itemSize, AdjustVolumesScreen screen) {
-        super(width, height, top, itemSize);
+    public AdjustVolumeList(int width, int height, int top, int size, AdjustVolumesScreen screen) {
+        super(width, height, top, size);
         this.screen = screen;
         this.entries = Lists.newArrayList();
         this.filter = "";
+        setRenderBackground(false);
+        setRenderTopAndBottom(false);
         updateEntryList();
     }
 
     public static void update() {
-        if (Minecraft.getInstance().gui.screen() instanceof AdjustVolumesScreen volumesScreen) {
+        if (Minecraft.getInstance().screen instanceof AdjustVolumesScreen volumesScreen) {
             volumesScreen.volumeList.updateEntryList();
         }
     }

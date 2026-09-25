@@ -1,24 +1,24 @@
 package de.maxhenkel.voicechat.intercompatibility;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import de.maxhenkel.voicechat.Voicechat;
+import de.maxhenkel.voicechat.events.ClientVoiceChatConnectedEvent;
+import de.maxhenkel.voicechat.events.ClientVoiceChatDisconnectedEvent;
 import de.maxhenkel.voicechat.voice.client.ClientVoicechatConnection;
-import de.maxhenkel.voicechat.voice.client.IconFeatureRenderer;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.input.MouseButtonInfo;
-import net.minecraft.client.renderer.feature.FeatureRendererMap;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.network.Connection;
-import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.RepositorySource;
-import net.minecraftforge.client.event.AddGuiOverlayLayersEvent;
+import net.minecraftforge.client.ClientRegistry;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.client.gui.overlay.ForgeLayeredDraw;
+import net.minecraftforge.client.event.RenderGameOverlayEvent;
+import net.minecraftforge.client.gui.ForgeIngameGui;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.net.SocketAddress;
 import java.util.List;
@@ -41,7 +41,6 @@ public class ForgeClientCompatibilityManager extends ClientCompatibilityManager 
     private final List<Consumer<ClientVoicechatConnection>> voicechatConnectEvents;
     private final List<Runnable> voicechatDisconnectEvents;
     private final List<Consumer<Integer>> publishServerEvents;
-    private final List<KeyMapping> keyMappings;
 
     public ForgeClientCompatibilityManager() {
         minecraft = Minecraft.getInstance();
@@ -57,55 +56,65 @@ public class ForgeClientCompatibilityManager extends ClientCompatibilityManager 
         voicechatConnectEvents = new CopyOnWriteArrayList<>();
         voicechatDisconnectEvents = new CopyOnWriteArrayList<>();
         publishServerEvents = new CopyOnWriteArrayList<>();
-        keyMappings = new CopyOnWriteArrayList<>();
     }
 
-    //TODO Use Forge event once its added
-    public void onRegisterFeatureRenderers(FeatureRendererMap featureRenderers) {
-        featureRenderers.put(IconFeatureRenderer.TYPE, new IconFeatureRenderer());
+    @SubscribeEvent
+    public void onRenderName(net.minecraftforge.client.event.RenderNameplateEvent event) {
+        if (minecraft.player == null || event.getEntity().isInvisibleTo(minecraft.player)) {
+            return;
+        }
+        renderNameplateEvents.forEach(renderNameplateEvent -> renderNameplateEvent.render(event.getEntity(), event.getContent(), event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight()));
     }
 
-    public void onRenderName(net.minecraftforge.client.event.RenderNameTagEvent event) {
-        renderNameplateEvents.forEach(renderNameplateEvent -> renderNameplateEvent.render(event.getState(), event.getCameraState(), event.getPoseStack(), event.getNodeCollector()));
+    @SubscribeEvent
+    public void onRenderOverlay(RenderGameOverlayEvent.PostLayer event) {
+        if (event.getOverlay() != ForgeIngameGui.HOTBAR_ELEMENT) {
+            return;
+        }
+        renderHUDEvents.forEach(renderHUDEvent -> renderHUDEvent.render(event.getMatrixStack(), event.getPartialTicks()));
     }
 
-    private static final Identifier VOICECHAT_ICONS_LAYER = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons");
-
-    public void onAddGuiOverlayLayers(AddGuiOverlayLayersEvent event) {
-        event.getLayeredDraw().add(VOICECHAT_ICONS_LAYER, (gg, dt) -> {
-            renderHUDEvents.forEach(renderHUDEvent -> renderHUDEvent.render(gg, dt.getRealtimeDeltaTicks()));
-        });
-        event.getLayeredDraw().putBelow(ForgeLayeredDraw.VANILLA_ROOT, VOICECHAT_ICONS_LAYER, ForgeLayeredDraw.POTION_EFFECTS);
+    @SubscribeEvent
+    public void onKey(InputEvent.KeyInputEvent event) {
+        keyboardEvents.forEach(keyboardEvent -> keyboardEvent.onKeyboardEvent(minecraft.getWindow().getWindow(), event.getKey(), event.getScanCode()));
     }
 
-    public void onKey(InputEvent.Key event) {
-        keyboardEvents.forEach(keyboardEvent -> keyboardEvent.onKeyboardEvent(event.getInfo()));
+    @SubscribeEvent
+    public void onMouse(InputEvent.RawMouseEvent event) {
+        mouseEvents.forEach(mouseEvent -> mouseEvent.onMouseEvent(minecraft.getWindow().getWindow(), event.getButton(), event.getAction(), event.getModifiers()));
     }
 
-    public void onMouse(InputEvent.MouseButton.Pre event) {
-        mouseEvents.forEach(mouseEvent -> mouseEvent.onMouseEvent(new MouseButtonInfo(event.getButton(), event.getModifiers()), event.getAction()));
-    }
-
-    public void onClientTick(TickEvent.ClientTickEvent.Pre event) {
+    @SubscribeEvent
+    public void onKeyInput(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) {
+            return;
+        }
         clientTickEvents.forEach(Runnable::run);
     }
 
-    public void onRenderTick(TickEvent.RenderTickEvent.Pre event) {
-        renderTickEvents.forEach(Runnable::run);
-    }
-
-    public void onKeyInput(TickEvent.ClientTickEvent.Post event) {
+    @SubscribeEvent
+    public void onInput(TickEvent.ClientTickEvent event) {
         inputEvents.forEach(Runnable::run);
     }
 
-    public void onDisconnect(LevelEvent.Unload event) {
+    @SubscribeEvent
+    public void onRenderTick(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) {
+            return;
+        }
+        renderTickEvents.forEach(Runnable::run);
+    }
+
+    @SubscribeEvent
+    public void onDisconnect(WorldEvent.Unload event) {
         // Not just changing the world - Disconnecting
         if (minecraft.gameMode == null) {
             disconnectEvents.forEach(Runnable::run);
         }
     }
 
-    public void onJoinServer(ClientPlayerNetworkEvent.LoggingIn event) {
+    @SubscribeEvent
+    public void onJoinServer(ClientPlayerNetworkEvent.LoggedInEvent event) {
         if (event.getPlayer() != minecraft.player) {
             return;
         }
@@ -114,7 +123,11 @@ public class ForgeClientCompatibilityManager extends ClientCompatibilityManager 
 
     private boolean wasPublished;
 
+    @SubscribeEvent
     public void onServer(TickEvent.ServerTickEvent event) {
+        if (!event.phase.equals(TickEvent.Phase.END)) {
+            return;
+        }
         IntegratedServer server = Minecraft.getInstance().getSingleplayerServer();
         if (server == null) {
             return;
@@ -127,12 +140,6 @@ public class ForgeClientCompatibilityManager extends ClientCompatibilityManager 
         }
 
         wasPublished = published;
-    }
-
-    public void onRegisterKeyBinds(RegisterKeyMappingsEvent event) {
-        for (KeyMapping mapping : keyMappings) {
-            event.register(mapping);
-        }
     }
 
     @Override
@@ -177,18 +184,20 @@ public class ForgeClientCompatibilityManager extends ClientCompatibilityManager 
 
     @Override
     public KeyMapping registerKeyBinding(KeyMapping keyBinding) {
-        keyMappings.add(keyBinding);
+        ClientRegistry.registerKeyBinding(keyBinding);
         return keyBinding;
     }
 
     @Override
     public void emitVoiceChatConnectedEvent(ClientVoicechatConnection client) {
         voicechatConnectEvents.forEach(consumer -> consumer.accept(client));
+        MinecraftForge.EVENT_BUS.post(new ClientVoiceChatConnectedEvent(client));
     }
 
     @Override
     public void emitVoiceChatDisconnectedEvent() {
         voicechatDisconnectEvents.forEach(Runnable::run);
+        MinecraftForge.EVENT_BUS.post(new ClientVoiceChatDisconnectedEvent());
     }
 
     @Override
@@ -227,7 +236,7 @@ public class ForgeClientCompatibilityManager extends ClientCompatibilityManager 
     }
 
     @Override
-    public void addResourcePackSource(RepositorySource repositorySource) {
-        minecraft.getResourcePackRepository().addPackFinder(repositorySource);
+    public void addResourcePackSource(PackRepository packRepository, RepositorySource repositorySource) {
+        packRepository.addPackFinder(repositorySource);
     }
 }

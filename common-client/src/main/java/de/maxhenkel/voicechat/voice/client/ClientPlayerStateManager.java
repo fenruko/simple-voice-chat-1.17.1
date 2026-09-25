@@ -26,7 +26,7 @@ import de.maxhenkel.voicechat.voice.common.PlayerState;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nullable;
@@ -47,7 +47,7 @@ public class ClientPlayerStateManager {
 
         states = new HashMap<>();
 
-        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().playerStateChannel, (player, packet) -> {
+        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().playerStateChannel, (client, handler, packet) -> {
             states.put(packet.getPlayerState().getUuid(), packet.getPlayerState());
             Voicechat.LOGGER.debug("Got state for {}: {}", packet.getPlayerState().getName(), packet.getPlayerState());
             VoicechatClient.USERNAME_CACHE.updateUsernameAndSave(packet.getPlayerState().getUuid(), packet.getPlayerState().getName());
@@ -61,7 +61,7 @@ public class ClientPlayerStateManager {
             JoinGroupList.update();
             GroupList.update();
         });
-        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().playerStatesChannel, (player, packet) -> {
+        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().playerStatesChannel, (client, handler, packet) -> {
             states = packet.getPlayerStates().stream().collect(Collectors.toMap(PlayerState::getUuid, p -> p));
             Voicechat.LOGGER.debug("Received {} state(s)", states.size());
             for (PlayerState state : states.values()) {
@@ -72,25 +72,25 @@ public class ClientPlayerStateManager {
             JoinGroupList.update();
             GroupList.update();
         });
-        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().removePlayerStateChannel, (player, packet) -> {
+        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().removePlayerStateChannel, (client, handler, packet) -> {
             states.remove(packet.getId());
             Voicechat.LOGGER.debug("Removed state {}", packet.getId());
             AdjustVolumeList.update();
             JoinGroupList.update();
             GroupList.update();
         });
-        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().joinedGroupChannel, (player, packet) -> {
-            Screen screen = Minecraft.getInstance().gui.screen();
+        ClientServerNetManager.setClientListener(CommonCompatibilityManager.INSTANCE.getNetManager().joinedGroupChannel, (client, handler, packet) -> {
+            Screen screen = Minecraft.getInstance().screen;
             this.group = packet.getGroup();
             if (packet.isWrongPassword()) {
                 if (screen instanceof JoinGroupScreen || screen instanceof CreateGroupScreen || screen instanceof EnterPasswordScreen) {
-                    Minecraft.getInstance().gui.setScreen(null);
+                    Minecraft.getInstance().setScreen(null);
                 }
-                player.sendOverlayMessage(Component.translatable("message.voicechat.wrong_password").withStyle(ChatFormatting.DARK_RED));
+                client.player.displayClientMessage(new TranslatableComponent("message.voicechat.wrong_password").withStyle(ChatFormatting.DARK_RED), true);
             } else if (group != null && screen instanceof JoinGroupScreen || screen instanceof CreateGroupScreen || screen instanceof EnterPasswordScreen) {
                 ClientGroup clientGroup = getGroup();
                 if (clientGroup != null) {
-                    Minecraft.getInstance().gui.setScreen(new GroupScreen(clientGroup));
+                    Minecraft.getInstance().setScreen(new GroupScreen(clientGroup));
                 } else {
                     Voicechat.LOGGER.warn("Received join group packet without group being present");
                 }
@@ -130,8 +130,12 @@ public class ClientPlayerStateManager {
         resetOwnState();
     }
 
-    public boolean isPlayerDisabled(UUID playerId) {
-        PlayerState playerState = states.get(playerId);
+    public boolean isPlayerDisabled(Player player) {
+        return isPlayerDisabled(player.getUUID());
+    }
+
+    public boolean isPlayerDisabled(UUID entityId) {
+        PlayerState playerState = states.get(entityId);
         if (playerState == null) {
             return false;
         }
@@ -139,8 +143,12 @@ public class ClientPlayerStateManager {
         return playerState.isDisabled();
     }
 
-    public boolean isPlayerDisconnected(UUID playerId) {
-        PlayerState playerState = states.get(playerId);
+    public boolean isPlayerDisconnected(Player player) {
+        return isPlayerDisconnected(player.getUUID());
+    }
+
+    public boolean isPlayerDisconnected(UUID entityId) {
+        PlayerState playerState = states.get(entityId);
         if (playerState == null) {
             return VoicechatClient.CLIENT_CONFIG.showFakePlayersDisconnected.get();
         }
@@ -207,8 +215,8 @@ public class ClientPlayerStateManager {
     }
 
     @Nullable
-    public UUID getGroup(UUID playerId) {
-        PlayerState state = states.get(playerId);
+    public UUID getGroup(Player player) {
+        PlayerState state = states.get(player.getUUID());
         if (state == null) {
             return null;
         }
@@ -244,7 +252,7 @@ public class ClientPlayerStateManager {
                 return connection.getData().getPlayerUUID();
             }
         }
-        return Minecraft.getInstance().getUser().getProfileId();
+        return Minecraft.getInstance().getUser().getGameProfile().getId();
     }
 
     @Nullable

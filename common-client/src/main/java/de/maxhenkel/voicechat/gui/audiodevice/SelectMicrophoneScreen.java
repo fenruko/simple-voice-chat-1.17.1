@@ -3,13 +3,14 @@ package de.maxhenkel.voicechat.gui.audiodevice;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 
 public class SelectMicrophoneScreen extends SelectDeviceScreen {
 
-    public static final Component TITLE = Component.translatable("gui.voicechat.select_microphone.title");
-    public static final Component NO_MICROPHONE = Component.translatable("message.voicechat.no_microphone").withStyle(ChatFormatting.GRAY);
+    public static final Component TITLE = new TranslatableComponent("gui.voicechat.select_microphone.title");
+    public static final Component NO_MICROPHONE = new TranslatableComponent("message.voicechat.no_microphone").withStyle(ChatFormatting.GRAY);
 
     public SelectMicrophoneScreen(@Nullable Screen parent) {
         super(TITLE, parent);

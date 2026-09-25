@@ -5,6 +5,7 @@ import de.maxhenkel.configbuilder.ConfigBuilder;
 import de.maxhenkel.voicechat.config.CategoryVolumeConfig;
 import de.maxhenkel.voicechat.config.ClientConfig;
 import de.maxhenkel.voicechat.config.PlayerVolumeConfig;
+import de.maxhenkel.voicechat.integration.clothconfig.ClothConfig;
 import de.maxhenkel.voicechat.intercompatibility.ClientCompatibilityManager;
 import de.maxhenkel.voicechat.intercompatibility.CommonCompatibilityManager;
 import de.maxhenkel.voicechat.macos.VersionCheck;
@@ -16,7 +17,11 @@ import de.maxhenkel.voicechat.profile.UsernameCache;
 import de.maxhenkel.voicechat.resourcepacks.VoiceChatResourcePack;
 import de.maxhenkel.voicechat.voice.client.ClientManager;
 import de.maxhenkel.voicechat.voice.client.KeyEvents;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.packs.repository.Pack;
+
+import java.util.function.Consumer;
 
 public abstract class VoicechatClient {
 
@@ -30,17 +35,20 @@ public abstract class VoicechatClient {
     public static VoiceChatResourcePack BLACK_ICONS;
 
     public VoicechatClient() {
-        KeyEvents.registerKeyBinds();
+        CLASSIC_ICONS = new VoiceChatResourcePack("classic_icons", new TranslatableComponent("resourcepack.voicechat.classic_icons"));
+        WHITE_ICONS = new VoiceChatResourcePack("white_icons", new TranslatableComponent("resourcepack.voicechat.white_icons"));
+        BLACK_ICONS = new VoiceChatResourcePack("black_icons", new TranslatableComponent("resourcepack.voicechat.black_icons"));
 
-        CLASSIC_ICONS = new VoiceChatResourcePack("classic_icons", Component.translatable("resourcepack.voicechat.classic_icons"));
-        WHITE_ICONS = new VoiceChatResourcePack("white_icons", Component.translatable("resourcepack.voicechat.white_icons"));
-        BLACK_ICONS = new VoiceChatResourcePack("black_icons", Component.translatable("resourcepack.voicechat.black_icons"));
+        Minecraft mc = Minecraft.getInstance();
+        // Don't add a pack source while datagen is running
+        if (mc != null) {
+            ClientCompatibilityManager.INSTANCE.addResourcePackSource(mc.getResourcePackRepository(), (Consumer<Pack> consumer, Pack.PackConstructor packConstructor) -> {
+                consumer.accept(CLASSIC_ICONS.toPack());
+                consumer.accept(WHITE_ICONS.toPack());
+                consumer.accept(BLACK_ICONS.toPack());
+            });
+        }
 
-        ClientCompatibilityManager.INSTANCE.addResourcePackSource(consumer -> {
-            consumer.accept(CLASSIC_ICONS.toPack());
-            consumer.accept(WHITE_ICONS.toPack());
-            consumer.accept(BLACK_ICONS.toPack());
-        });
     }
 
     public void initializeConfigs() {
@@ -55,6 +63,8 @@ public abstract class VoicechatClient {
 
         //Load instance
         ClientManager.instance();
+
+        ClothConfig.init();
 
         OpusManager.init();
         RNNoiseManager.init();

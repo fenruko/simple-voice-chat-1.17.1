@@ -1,46 +1,25 @@
 package de.maxhenkel.voicechat.intercompatibility;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.events.*;
 import de.maxhenkel.voicechat.mixin.ConnectionAccessor;
 import de.maxhenkel.voicechat.resourcepacks.IPackRepository;
 import de.maxhenkel.voicechat.voice.client.ClientVoicechatConnection;
-import de.maxhenkel.voicechat.voice.client.IconFeatureRenderer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.FeatureRendererRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
-import net.fabricmc.fabric.api.event.Event;
-import net.minecraft.client.DeltaTracker;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.Connection;
-import net.minecraft.resources.Identifier;
+import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.RepositorySource;
+import org.quiltmc.qsl.lifecycle.api.client.event.ClientTickEvents;
+import org.quiltmc.qsl.networking.api.client.ClientPlayConnectionEvents;
 
 import java.net.SocketAddress;
 import java.util.function.Consumer;
 
 public class QuiltClientCompatibilityManager extends ClientCompatibilityManager {
 
-    private static final Identifier VOICE_CHAT_ICON_LAYER = Identifier.fromNamespaceAndPath(Voicechat.MODID, "hud");
-    private static final Identifier EARLY_JOIN = Identifier.fromNamespaceAndPath(Voicechat.MODID, "early_join");
-
     private static final Minecraft mc = Minecraft.getInstance();
-
-    public QuiltClientCompatibilityManager() {
-        HudElementRegistry.attachElementBefore(VanillaHudElements.MOB_EFFECTS, VOICE_CHAT_ICON_LAYER, this::onRenderVoiceChatLayer);
-        ClientPlayConnectionEvents.JOIN.addPhaseOrdering(EARLY_JOIN, Event.DEFAULT_PHASE);
-        FeatureRendererRegistry.register(IconFeatureRenderer.TYPE, IconFeatureRenderer::new);
-    }
-
-    private void onRenderVoiceChatLayer(GuiGraphicsExtractor guiGraphics, DeltaTracker deltaTracker) {
-        RenderEvents.RENDER_HUD.invoker().accept(guiGraphics);
-    }
 
     @Override
     public void onRenderNamePlate(RenderNameplateEvent onRenderNamePlate) {
@@ -49,7 +28,7 @@ public class QuiltClientCompatibilityManager extends ClientCompatibilityManager 
 
     @Override
     public void onRenderHUD(RenderHUDEvent onRenderHUD) {
-        RenderEvents.RENDER_HUD.register(guiGraphics -> onRenderHUD.render(guiGraphics, mc.getDeltaTracker().getRealtimeDeltaTicks()));
+        RenderEvents.RENDER_HUD.register(poseStack -> onRenderHUD.render(poseStack, mc.getFrameTime()));
     }
 
     @Override
@@ -64,7 +43,7 @@ public class QuiltClientCompatibilityManager extends ClientCompatibilityManager 
 
     @Override
     public void onClientTick(Runnable onClientTick) {
-        ClientTickEvents.START_CLIENT_TICK.register(client -> onClientTick.run());
+        ClientTickEvents.START.register(client -> onClientTick.run());
     }
 
     @Override
@@ -74,7 +53,7 @@ public class QuiltClientCompatibilityManager extends ClientCompatibilityManager 
 
     @Override
     public InputConstants.Key getBoundKeyOf(KeyMapping keyBinding) {
-        return KeyMappingHelper.getBoundKeyOf(keyBinding);
+        return KeyBindingHelper.getBoundKeyOf(keyBinding);
     }
 
     @Override
@@ -84,7 +63,7 @@ public class QuiltClientCompatibilityManager extends ClientCompatibilityManager 
 
     @Override
     public KeyMapping registerKeyBinding(KeyMapping keyBinding) {
-        return KeyMappingHelper.registerKeyMapping(keyBinding);
+        return KeyBindingHelper.registerKeyBinding(keyBinding);
     }
 
     @Override
@@ -119,8 +98,7 @@ public class QuiltClientCompatibilityManager extends ClientCompatibilityManager 
 
     @Override
     public void onJoinWorld(Runnable onJoinWorld) {
-        // Higher priority to prevent this from not firing in case another mod throws an exception in this event
-        ClientPlayConnectionEvents.JOIN.register(EARLY_JOIN, (handler, sender, client) -> onJoinWorld.run());
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> onJoinWorld.run());
     }
 
     @Override
@@ -134,8 +112,8 @@ public class QuiltClientCompatibilityManager extends ClientCompatibilityManager 
     }
 
     @Override
-    public void addResourcePackSource(RepositorySource repositorySource) {
-        IPackRepository repository = (IPackRepository) mc.getResourcePackRepository();
+    public void addResourcePackSource(PackRepository packRepository, RepositorySource repositorySource) {
+        IPackRepository repository = (IPackRepository) packRepository;
         repository.voicechat$addSource(repositorySource);
     }
 }

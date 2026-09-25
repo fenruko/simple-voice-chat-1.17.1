@@ -1,8 +1,12 @@
 package de.maxhenkel.voicechat.net;
 
 import de.maxhenkel.voicechat.Voicechat;
-import de.maxhenkel.voicechat.intercompatibility.CommonCompatibilityManager;
+import io.netty.buffer.Unpooled;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
 public abstract class NetManager {
 
@@ -40,19 +44,17 @@ public abstract class NetManager {
 
     public abstract <T extends Packet<T>> Channel<T> registerReceiver(Class<T> packetType, boolean toClient, boolean toServer);
 
-    protected abstract void sendToServerInternal(Packet<?> packet);
-
     public static void sendToClient(ServerPlayer player, Packet<?> packet) {
         if (!Voicechat.SERVER.isCompatible(player)) {
             return;
         }
-        CommonCompatibilityManager.INSTANCE.getNetManager().sendToClient(packet, player);
+        FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
+        packet.toBytes(buffer);
+        player.connection.send(new ClientboundCustomPayloadPacket(packet.getIdentifier(), buffer));
     }
 
-    public abstract void sendToClient(Packet<?> packet, ServerPlayer player);
-
     public interface ServerReceiver<T extends Packet<T>> {
-        void onPacket(ServerPlayer player, T packet);
+        void onPacket(MinecraftServer server, ServerPlayer player, ServerGamePacketListenerImpl handler, T packet);
     }
 
 }

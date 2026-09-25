@@ -2,15 +2,14 @@ package de.maxhenkel.voicechat.net;
 
 import de.maxhenkel.voicechat.Voicechat;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
 import java.util.UUID;
 
 public class JoinGroupPacket implements Packet<JoinGroupPacket> {
 
-    public static final CustomPacketPayload.Type<JoinGroupPacket> SET_GROUP = new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath(Voicechat.MODID, "set_group"));
+    public static final ResourceLocation SET_GROUP = new ResourceLocation(Voicechat.MODID, "set_group");
 
     private UUID group;
     @Nullable
@@ -35,6 +34,11 @@ public class JoinGroupPacket implements Packet<JoinGroupPacket> {
     }
 
     @Override
+    public ResourceLocation getIdentifier() {
+        return SET_GROUP;
+    }
+
+    @Override
     public JoinGroupPacket fromBytes(FriendlyByteBuf buf) {
         group = buf.readUUID();
         if (buf.readBoolean()) {
@@ -50,11 +54,6 @@ public class JoinGroupPacket implements Packet<JoinGroupPacket> {
         if (password != null) {
             buf.writeUtf(password, 512);
         }
-    }
-
-    @Override
-    public Type<JoinGroupPacket> type() {
-        return SET_GROUP;
     }
 
 }

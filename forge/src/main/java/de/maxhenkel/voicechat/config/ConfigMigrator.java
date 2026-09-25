@@ -8,7 +8,8 @@ import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.VoicechatClient;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.storage.LevelResource;
-import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -30,8 +31,9 @@ public class ConfigMigrator {
         );
     }
 
-    public static void onLoadLevel(LevelEvent.Load event) {
-        if (!(event.getLevel() instanceof ServerLevel serverLevel)) {
+    @SubscribeEvent
+    public void onLoadLevel(WorldEvent.Load event) {
+        if (!(event.getWorld() instanceof ServerLevel serverLevel)) {
             return;
         }
         migrateConfig(

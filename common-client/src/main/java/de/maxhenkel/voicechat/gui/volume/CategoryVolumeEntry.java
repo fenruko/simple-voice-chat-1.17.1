@@ -1,21 +1,22 @@
 package de.maxhenkel.voicechat.gui.volume;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.VoicechatClient;
 import de.maxhenkel.voicechat.plugins.impl.VolumeCategoryImpl;
 import de.maxhenkel.voicechat.voice.client.ClientManager;
 import de.maxhenkel.voicechat.voice.client.ClientVoicechat;
 import de.maxhenkel.voicechat.voice.common.AudioUtils;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.resources.ResourceLocation;
 
 public class CategoryVolumeEntry extends VolumeEntry {
 
-    protected static final Identifier OTHER_VOLUME_ICON_PATH = Identifier.fromNamespaceAndPath(Voicechat.MODID, "textures/icons/other_volume.png");
+    protected static final ResourceLocation OTHER_VOLUME_ICON_PATH = new ResourceLocation(Voicechat.MODID, "textures/icons/other_volume.png");
 
     protected final VolumeCategoryImpl category;
-    protected final Identifier texture;
+    protected final ResourceLocation texture;
 
     public CategoryVolumeEntry(VolumeCategoryImpl category, AdjustVolumesScreen screen) {
         super(screen, new AdjustCategoryVolumeEntry(category.getId()));
@@ -28,11 +29,14 @@ public class CategoryVolumeEntry extends VolumeEntry {
     }
 
     @Override
-    public void renderElement(GuiGraphicsExtractor guiGraphics, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovered, float delta, int skinX, int skinY, int textX, int textY) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, texture, skinX, skinY, 16, 16, SKIN_SIZE, SKIN_SIZE, 16, 16, 16, 16);
-        renderScrollingString(guiGraphics, category.getDisplayName());
+    public void renderElement(PoseStack poseStack, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovered, float delta, int skinX, int skinY, int textX, int textY) {
+        RenderSystem.setShaderTexture(0, texture);
+        GuiComponent.blit(poseStack, skinX, skinY, SKIN_SIZE, SKIN_SIZE, 16, 16, 16, 16, 16, 16);
+        minecraft.font.draw(poseStack, category.getDisplayName(), (float) textX, (float) textY, PLAYER_NAME_COLOR);
         if (hovered && category.getDescription() != null) {
-            guiGraphics.setTooltipForNextFrame(minecraft.font, category.getDisplayDescription(), mouseX, mouseY);
+            screen.postRender(() -> {
+                screen.renderTooltip(poseStack, category.getDisplayDescription(), mouseX, mouseY);
+            });
         }
     }
 

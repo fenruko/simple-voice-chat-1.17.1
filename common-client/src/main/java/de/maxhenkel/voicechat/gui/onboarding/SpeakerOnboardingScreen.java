@@ -5,12 +5,13 @@ import de.maxhenkel.voicechat.gui.audiodevice.SpeakerAudioDeviceList;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 
 public class SpeakerOnboardingScreen extends DeviceOnboardingScreen {
 
-    private static final Component TITLE = Component.translatable("message.voicechat.onboarding.speaker").withStyle(ChatFormatting.BOLD);
+    private static final Component TITLE = new TranslatableComponent("message.voicechat.onboarding.speaker").withStyle(ChatFormatting.BOLD);
 
     public SpeakerOnboardingScreen(@Nullable Screen previous) {
         super(TITLE, previous);

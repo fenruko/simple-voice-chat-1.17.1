@@ -2,8 +2,10 @@ package de.maxhenkel.voicechat.net;
 
 import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.intercompatibility.CommonCompatibilityManager;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 
 import javax.annotation.Nullable;
 
@@ -20,15 +22,15 @@ public class Channel<T extends Packet<T>> {
         serverListener = packetReceiver;
     }
 
-    public void onServerPacket(ServerPlayer player, T packet) {
+    public void onServerPacket(MinecraftServer server, ServerPlayer player, ServerGamePacketListenerImpl handler, T packet) {
         if (!Voicechat.SERVER.getRateLimiter().allow(player.getUUID())) {
             Voicechat.LOGGER.warn("Player {} exceeded packet rate limit", player.getName().getString());
-            player.connection.disconnect(Component.translatableWithFallback("disconnect.exceeded_packet_rate", "Kicked for exceeding packet rate limit"));
+            player.connection.disconnect(new TranslatableComponent("disconnect.exceeded_packet_rate"));
             return;
         }
-        CommonCompatibilityManager.INSTANCE.execute(player.level().getServer(), () -> {
+        CommonCompatibilityManager.INSTANCE.execute(server, () -> {
             if (serverListener != null) {
-                serverListener.onPacket(player, packet);
+                serverListener.onPacket(server, player, handler, packet);
             }
         });
     }

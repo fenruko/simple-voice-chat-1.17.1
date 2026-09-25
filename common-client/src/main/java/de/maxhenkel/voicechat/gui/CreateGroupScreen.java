@@ -1,32 +1,35 @@
 package de.maxhenkel.voicechat.gui;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.Voicechat;
-import de.maxhenkel.voicechat.gui.widgets.GroupEditBox;
 import de.maxhenkel.voicechat.net.ClientServerNetManager;
 import de.maxhenkel.voicechat.net.CreateGroupPacket;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import org.lwjgl.glfw.GLFW;
 
 public class CreateGroupScreen extends VoiceChatScreenBase {
 
-    private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Voicechat.MODID, "textures/gui/gui_create_group.png");
-    private static final Component TITLE = Component.translatable("gui.voicechat.create_group.title");
-    private static final Component CREATE = Component.translatable("message.voicechat.create");
-    private static final Component CREATE_GROUP = Component.translatable("message.voicechat.create_group");
-    private static final Component GROUP_NAME = Component.translatable("message.voicechat.group_name");
-    private static final Component OPTIONAL_PASSWORD = Component.translatable("message.voicechat.optional_password");
-    private static final Component GROUP_TYPE = Component.translatable("message.voicechat.group_type");
+    private static final ResourceLocation TEXTURE = new ResourceLocation(Voicechat.MODID, "textures/gui/gui_create_group.png");
+    private static final Component TITLE = new TranslatableComponent("gui.voicechat.create_group.title");
+    private static final Component CREATE = new TranslatableComponent("message.voicechat.create");
+    private static final Component CREATE_GROUP = new TranslatableComponent("message.voicechat.create_group");
+    private static final Component GROUP_NAME = new TranslatableComponent("message.voicechat.group_name");
+    private static final Component OPTIONAL_PASSWORD = new TranslatableComponent("message.voicechat.optional_password");
+    private static final Component GROUP_TYPE = new TranslatableComponent("message.voicechat.group_type");
 
     private EditBox groupName;
     private EditBox password;
     private GroupType groupType;
+    private CycleButton<GroupType> groupTypeButton;
     private Button createGroup;
 
     public CreateGroupScreen() {
@@ -39,24 +42,28 @@ public class CreateGroupScreen extends VoiceChatScreenBase {
         super.init();
         hoverAreas.clear();
         clearWidgets();
+        minecraft.keyboardHandler.setSendRepeatsToGui(true);
 
-        groupName = new GroupEditBox(font, guiLeft + 7, guiTop + 30, xSize - 7 * 2, 14);
+        groupName = new EditBox(font, guiLeft + 7, guiTop + 31, xSize - 7 * 2, 12, TextComponent.EMPTY);
         groupName.setMaxLength(Voicechat.MAX_GROUP_NAME_LENGTH);
+        groupName.setFilter(s -> s.isEmpty() || Voicechat.GROUP_REGEX.matcher(s).matches());
         addRenderableWidget(groupName);
 
-        password = new GroupEditBox(font, guiLeft + 7, guiTop + 56, xSize - 7 * 2, 14);
+        password = new EditBox(font, guiLeft + 7, guiTop + 57, xSize - 7 * 2, 12, TextComponent.EMPTY);
         password.setMaxLength(Voicechat.MAX_GROUP_NAME_LENGTH);
+        password.setFilter(s -> s.isEmpty() || Voicechat.GROUP_REGEX.matcher(s).matches());
         addRenderableWidget(password);
 
-        addRenderableWidget(CycleButton.builder(GroupType::getTranslation, GroupType.NORMAL).withValues(GroupType.values()).withTooltip(object -> {
-            return Tooltip.create(object.getDescription());
+        groupTypeButton = CycleButton.builder(GroupType::getTranslation).withValues(GroupType.values()).withInitialValue(GroupType.NORMAL).withTooltip(object -> {
+            return minecraft.font.split(object.getDescription(), 200);
         }).create(guiLeft + 6, guiTop + 74, xSize - 12, 20, GROUP_TYPE, (button, type) -> {
             groupType = type;
-        }));
+        });
+        addRenderableWidget(groupTypeButton);
 
-        createGroup = Button.builder(CREATE, button -> {
+        createGroup = new Button(guiLeft + 6, guiTop + ySize - 27, xSize - 12, 20, CREATE, button -> {
             createGroup();
-        }).bounds(guiLeft + 6, guiTop + ySize - 27, xSize - 12, 20).build();
+        });
         addRenderableWidget(createGroup);
     }
 
@@ -69,31 +76,46 @@ public class CreateGroupScreen extends VoiceChatScreenBase {
     @Override
     public void tick() {
         super.tick();
+        groupName.tick();
+        password.tick();
         createGroup.active = !groupName.getValue().isEmpty();
     }
 
     @Override
-    public void extractBackgroundRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiLeft, guiTop, 0, 0, xSize, ySize, 256, 256);
+    public void onClose() {
+        super.onClose();
+        minecraft.keyboardHandler.setSendRepeatsToGui(false);
     }
 
     @Override
-    public void extractForegroundRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
-        guiGraphics.text(font, CREATE_GROUP, guiLeft + xSize / 2 - font.width(CREATE_GROUP) / 2, guiTop + 7, FONT_COLOR, false);
-        guiGraphics.text(font, GROUP_NAME, guiLeft + 8, guiTop + 7 + font.lineHeight + 5, FONT_COLOR, false);
-        guiGraphics.text(font, OPTIONAL_PASSWORD, guiLeft + 8, guiTop + 7 + (font.lineHeight + 5) * 2 + 10 + 2, FONT_COLOR, false);
+    public void renderBackground(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
+        RenderSystem.setShaderTexture(0, TEXTURE);
+        blit(poseStack, guiLeft, guiTop, 0, 0, xSize, ySize);
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
-        if (keyEvent.isEscape()) {
-            minecraft.gui.setScreen(null);
+    public void renderForeground(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        font.draw(poseStack, CREATE_GROUP, guiLeft + xSize / 2 - font.width(CREATE_GROUP) / 2, guiTop + 7, FONT_COLOR);
+        font.draw(poseStack, GROUP_NAME, guiLeft + 8, guiTop + 7 + font.lineHeight + 5, FONT_COLOR);
+        font.draw(poseStack, OPTIONAL_PASSWORD, guiLeft + 8, guiTop + 7 + (font.lineHeight + 5) * 2 + 10 + 2, FONT_COLOR);
+
+        if (mouseX >= groupTypeButton.x && mouseY >= groupTypeButton.y && mouseX < groupTypeButton.x + groupTypeButton.getWidth() && mouseY < groupTypeButton.y + groupTypeButton.getHeight()) {
+            renderTooltip(poseStack, groupTypeButton.getTooltip(), mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            minecraft.setScreen(null);
             return true;
         }
-        if (super.keyPressed(keyEvent)) {
+        if (super.keyPressed(keyCode, scanCode, modifiers)) {
             return true;
         }
-        if (keyEvent.isConfirmation()) {
+        if (keyCode == GLFW.GLFW_KEY_ENTER) {
             createGroup();
             return true;
         }
@@ -101,11 +123,12 @@ public class CreateGroupScreen extends VoiceChatScreenBase {
     }
 
     @Override
-    public void resize(int width, int height) {
+    public void resize(Minecraft client, int width, int height) {
         String groupNameText = groupName.getValue();
         String passwordText = password.getValue();
-        init(width, height);
+        init(client, width, height);
         groupName.setValue(groupNameText);
         password.setValue(passwordText);
     }
+
 }

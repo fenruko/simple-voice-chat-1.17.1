@@ -1,14 +1,16 @@
 package de.maxhenkel.voicechat.gui.group;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.Voicechat;
 import de.maxhenkel.voicechat.VoicechatClient;
 import de.maxhenkel.voicechat.api.Group;
 import de.maxhenkel.voicechat.gui.GroupType;
-import de.maxhenkel.voicechat.gui.VoiceChatScreenBase;
 import de.maxhenkel.voicechat.gui.tooltips.DisableTooltipSupplier;
 import de.maxhenkel.voicechat.gui.tooltips.HideGroupHudTooltipSupplier;
 import de.maxhenkel.voicechat.gui.tooltips.MuteTooltipSupplier;
 import de.maxhenkel.voicechat.gui.widgets.ImageButton;
+import de.maxhenkel.voicechat.gui.widgets.ListScreenBase;
 import de.maxhenkel.voicechat.gui.widgets.ToggleImageButton;
 import de.maxhenkel.voicechat.net.ClientServerNetManager;
 import de.maxhenkel.voicechat.net.LeaveGroupPacket;
@@ -16,23 +18,24 @@ import de.maxhenkel.voicechat.voice.client.ClientManager;
 import de.maxhenkel.voicechat.voice.client.ClientPlayerStateManager;
 import de.maxhenkel.voicechat.voice.client.MicrophoneActivationType;
 import de.maxhenkel.voicechat.voice.common.ClientGroup;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
-public class GroupScreen extends VoiceChatScreenBase {
+import java.util.Collections;
 
-    protected static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Voicechat.MODID, "textures/gui/gui_group.png");
-    protected static final Identifier LEAVE = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/leave");
-    protected static final Identifier MICROPHONE = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/microphone_button");
-    protected static final Identifier SPEAKER = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/speaker_button");
-    protected static final Identifier GROUP_HUD = Identifier.fromNamespaceAndPath(Voicechat.MODID, "icons/group_hud_button");
-    protected static final Component TITLE = Component.translatable("gui.voicechat.group.title");
-    protected static final Component LEAVE_GROUP = Component.translatable("message.voicechat.leave_group");
+public class GroupScreen extends ListScreenBase {
+
+    protected static final ResourceLocation TEXTURE = new ResourceLocation(Voicechat.MODID, "textures/gui/gui_group.png");
+    protected static final ResourceLocation LEAVE = new ResourceLocation(Voicechat.MODID, "textures/icons/leave.png");
+    protected static final ResourceLocation MICROPHONE = new ResourceLocation(Voicechat.MODID, "textures/icons/microphone_button.png");
+    protected static final ResourceLocation SPEAKER = new ResourceLocation(Voicechat.MODID, "textures/icons/speaker_button.png");
+    protected static final ResourceLocation GROUP_HUD = new ResourceLocation(Voicechat.MODID, "textures/icons/group_hud_button.png");
+    protected static final Component TITLE = new TranslatableComponent("gui.voicechat.group.title");
+    protected static final Component LEAVE_GROUP = new TranslatableComponent("message.voicechat.leave_group");
 
     protected static final int HEADER_SIZE = 16;
     protected static final int FOOTER_SIZE = 32;
@@ -65,7 +68,7 @@ public class GroupScreen extends VoiceChatScreenBase {
         ClientPlayerStateManager stateManager = ClientManager.getPlayerStateManager();
 
         if (groupList != null) {
-            groupList.updateSize(width, units * UNIT_SIZE, 0, guiTop + HEADER_SIZE);
+            groupList.updateSize(width, units * UNIT_SIZE, guiTop + HEADER_SIZE);
         } else {
             groupList = new GroupList(this, width, units * UNIT_SIZE, guiTop + HEADER_SIZE, CELL_HEIGHT);
         }
@@ -91,9 +94,10 @@ public class GroupScreen extends VoiceChatScreenBase {
 
         leave = new ImageButton(guiLeft + xSize - buttonSize - 7, buttonY, LEAVE, button -> {
             ClientServerNetManager.sendToServer(new LeaveGroupPacket());
-            minecraft.gui.setScreen(new JoinGroupScreen());
+            minecraft.setScreen(new JoinGroupScreen());
+        }, (button, matrices, mouseX, mouseY) -> {
+            renderTooltip(matrices, Collections.singletonList(LEAVE_GROUP.getVisualOrderText()), mouseX, mouseY);
         });
-        leave.setTooltip(Tooltip.create(LEAVE_GROUP));
         addRenderableWidget(leave);
 
         checkButtons();
@@ -111,27 +115,28 @@ public class GroupScreen extends VoiceChatScreenBase {
     }
 
     @Override
-    public void extractBackgroundRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiLeft, guiTop, 0, 0, xSize, HEADER_SIZE, 256, 256);
+    public void renderBackground(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        RenderSystem.setShaderTexture(0, TEXTURE);
+        blit(poseStack, guiLeft, guiTop, 0, 0, xSize, HEADER_SIZE);
         for (int i = 0; i < units; i++) {
-            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiLeft, guiTop + HEADER_SIZE + UNIT_SIZE * i, 0, HEADER_SIZE, xSize, UNIT_SIZE, 256, 256);
+            blit(poseStack, guiLeft, guiTop + HEADER_SIZE + UNIT_SIZE * i, 0, HEADER_SIZE, xSize, UNIT_SIZE);
         }
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiLeft, guiTop + HEADER_SIZE + UNIT_SIZE * units, 0, HEADER_SIZE + UNIT_SIZE, xSize, FOOTER_SIZE, 256, 256);
-        guiGraphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, guiLeft + 10, guiTop + HEADER_SIZE + 6 - 2, xSize, 0, 12, 12, 256, 256);
+        blit(poseStack, guiLeft, guiTop + HEADER_SIZE + UNIT_SIZE * units, 0, HEADER_SIZE + UNIT_SIZE, xSize, FOOTER_SIZE);
+        blit(poseStack, guiLeft + 10, guiTop + HEADER_SIZE + 6 - 2, xSize, 0, 12, 12);
     }
 
     @Override
-    public void extractForegroundRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float delta) {
-        groupList.extractRenderState(guiGraphics, mouseX, mouseY, delta);
-
+    public void renderForeground(PoseStack poseStack, int mouseX, int mouseY, float delta) {
         MutableComponent title;
         if (group.getType().equals(Group.Type.NORMAL)) {
-            title = Component.translatable("message.voicechat.group_title", Component.literal(group.getName()));
+            title = new TranslatableComponent("message.voicechat.group_title", new TextComponent(group.getName()));
         } else {
-            title = Component.translatable("message.voicechat.group_type_title", Component.literal(group.getName()), GroupType.fromType(group.getType()).getTranslation());
+            title = new TranslatableComponent("message.voicechat.group_type_title", new TextComponent(group.getName()), GroupType.fromType(group.getType()).getTranslation());
         }
 
-        guiGraphics.text(font, title, guiLeft + xSize / 2 - font.width(title) / 2, guiTop + 5, FONT_COLOR, false);
+        font.draw(poseStack, title, guiLeft + xSize / 2 - font.width(title) / 2, guiTop + 5, FONT_COLOR);
+
+        groupList.render(poseStack, mouseX, mouseY, delta);
     }
 
 }

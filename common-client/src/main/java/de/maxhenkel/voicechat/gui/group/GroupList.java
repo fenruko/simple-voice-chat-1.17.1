@@ -1,10 +1,10 @@
 package de.maxhenkel.voicechat.gui.group;
 
+import de.maxhenkel.voicechat.gui.widgets.ListScreenBase;
 import de.maxhenkel.voicechat.gui.widgets.ListScreenListBase;
 import de.maxhenkel.voicechat.voice.client.ClientManager;
 import de.maxhenkel.voicechat.voice.common.PlayerState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -13,11 +13,13 @@ import java.util.UUID;
 
 public class GroupList extends ListScreenListBase<GroupEntry> {
 
-    protected final Screen parent;
+    protected final ListScreenBase parent;
 
-    public GroupList(Screen parent, int width, int height, int top, int itemSize) {
-        super(width, height, top, itemSize);
+    public GroupList(ListScreenBase parent, int width, int height, int top, int size) {
+        super(width, height, top, size);
         this.parent = parent;
+        setRenderBackground(false);
+        setRenderTopAndBottom(false);
         updateMembers();
     }
 
@@ -26,7 +28,7 @@ public class GroupList extends ListScreenListBase<GroupEntry> {
         UUID group = ClientManager.getPlayerStateManager().getGroupID();
         if (group == null) {
             clearEntries();
-            minecraft.gui.setScreen(null);
+            minecraft.setScreen(null);
             return;
         }
         boolean changed = false;
@@ -57,12 +59,12 @@ public class GroupList extends ListScreenListBase<GroupEntry> {
         }
 
         if (changed) {
-            sort(Comparator.comparing(o -> o.getState().getName()));
+            children().sort(Comparator.comparing(o -> o.getState().getName()));
         }
     }
 
     public static void update() {
-        if (Minecraft.getInstance().gui.screen() instanceof GroupScreen groupScreen) {
+        if (Minecraft.getInstance().screen instanceof GroupScreen groupScreen) {
             groupScreen.groupList.updateMembers();
         }
     }

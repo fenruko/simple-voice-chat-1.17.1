@@ -1,11 +1,10 @@
 package de.maxhenkel.voicechat.gui.widgets;
 
 import de.maxhenkel.configbuilder.entry.ConfigEntry;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.function.Function;
 
@@ -15,7 +14,7 @@ public class BooleanConfigButton extends AbstractButton {
     protected Function<Boolean, Component> component;
 
     public BooleanConfigButton(int x, int y, int width, int height, ConfigEntry<Boolean> entry, Function<Boolean, Component> component) {
-        super(x, y, width, height, Component.empty());
+        super(x, y, width, height, TextComponent.EMPTY);
         this.entry = entry;
         this.component = component;
         updateText();
@@ -26,19 +25,13 @@ public class BooleanConfigButton extends AbstractButton {
     }
 
     @Override
-    public void onPress(InputWithModifiers inputWithModifiers) {
+    public void onPress() {
         entry.set(!entry.get()).save();
         updateText();
     }
 
     @Override
-    protected void extractContents(GuiGraphicsExtractor guiGraphics, int i, int j, float f) {
-        extractDefaultSprite(guiGraphics);
-        extractDefaultLabel(guiGraphics.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
-    }
-
-    @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    public void updateNarration(NarrationElementOutput narrationElementOutput) {
         defaultButtonNarrationText(narrationElementOutput);
     }
 }

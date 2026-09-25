@@ -3,15 +3,15 @@ package de.maxhenkel.voicechat.gui.widgets;
 import de.maxhenkel.configbuilder.entry.ConfigEntry;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 
 public abstract class EnumButton<T extends Enum<T>> extends AbstractButton {
 
     protected ConfigEntry<T> entry;
 
     public EnumButton(int xIn, int yIn, int widthIn, int heightIn, ConfigEntry<T> entry) {
-        super(xIn, yIn, widthIn, heightIn, Component.empty());
+        super(xIn, yIn, widthIn, heightIn, TextComponent.EMPTY);
         this.entry = entry;
         updateText();
     }
@@ -27,7 +27,7 @@ public abstract class EnumButton<T extends Enum<T>> extends AbstractButton {
     }
 
     @Override
-    public void onPress(InputWithModifiers inputWithModifiers) {
+    public void onPress() {
         T e = entry.get();
         Enum<T>[] values = e.getClass().getEnumConstants();
         T type = (T) values[(e.ordinal() + 1) % values.length];
@@ -37,7 +37,7 @@ public abstract class EnumButton<T extends Enum<T>> extends AbstractButton {
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-        defaultButtonNarrationText(narrationElementOutput);
+    public void updateNarration(NarrationElementOutput narration) {
+        defaultButtonNarrationText(narration);
     }
 }

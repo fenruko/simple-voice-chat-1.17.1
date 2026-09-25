@@ -113,7 +113,6 @@ gradle-app.setting
 
 # Common working directory
 run/
-runs/
 
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
@@ -124,3 +123,6 @@ modrinth_token.txt
 hangar_api_key.txt
 
 /forge/src/main/resources/natives/
+# CI-built deliverable jars (tracked intentionally)
+!builds/
+!builds/*.jar

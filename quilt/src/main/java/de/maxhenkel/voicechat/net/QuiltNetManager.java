@@ -1,30 +1,23 @@
 package de.maxhenkel.voicechat.net;
 
 import de.maxhenkel.voicechat.Voicechat;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ServerPlayer;
-import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
+import de.maxhenkel.voicechat.intercompatibility.CommonCompatibilityManager;
+import net.minecraft.resources.ResourceLocation;
+import org.quiltmc.qsl.networking.api.ServerPlayNetworking;
+import org.quiltmc.qsl.networking.api.client.ClientPlayNetworking;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class QuiltNetManager extends NetManager {
 
-    private final Set<Identifier> packets;
+    private final Set<ResourceLocation> packets;
 
     public QuiltNetManager() {
         packets = new HashSet<>();
     }
 
-    public Set<Identifier> getPackets() {
+    public Set<ResourceLocation> getPackets() {
         return packets;
     }
 
@@ -33,65 +26,37 @@ public class QuiltNetManager extends NetManager {
         ClientServerChannel<T> c = new ClientServerChannel<>();
         try {
             T dummyPacket = packetType.getDeclaredConstructor().newInstance();
-            CustomPacketPayload.Type<T> type = dummyPacket.type();
-            packets.add(type.id());
-            StreamCodec<RegistryFriendlyByteBuf, T> codec = new StreamCodec<>() {
-
-                @Override
-                public void encode(RegistryFriendlyByteBuf buf, T packet) {
-                    packet.toBytes(buf);
-                }
-
-                @Override
-                public T decode(RegistryFriendlyByteBuf buf) {
-                    try {
-                        T packet = packetType.getDeclaredConstructor().newInstance();
-                        packet.fromBytes(buf);
-                        return packet;
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            };
+            ResourceLocation identifier = dummyPacket.getIdentifier();
+            packets.add(identifier);
             if (toServer) {
-                PayloadTypeRegistry.serverboundPlay().register(type, codec);
-                ServerPlayNetworking.registerGlobalReceiver(type, (payload, context) -> {
+                ServerPlayNetworking.registerGlobalReceiver(identifier, (server, player, handler, buf, responseSender) -> {
                     try {
-                        if (!Voicechat.SERVER.isCompatible(context.player()) && !packetType.equals(RequestSecretPacket.class)) {
+                        if (!Voicechat.SERVER.isCompatible(player) && !packetType.equals(RequestSecretPacket.class)) {
                             return;
                         }
-                        c.onServerPacket(context.player(), payload);
+                        T packet = packetType.getDeclaredConstructor().newInstance();
+                        packet.fromBytes(buf);
+                        c.onServerPacket(server, player, handler, packet);
                     } catch (Exception e) {
                         Voicechat.LOGGER.error("Failed to process packet", e);
                     }
                 });
             }
-            if (toClient) {
-                PayloadTypeRegistry.clientboundPlay().register(type, codec);
-                if (MinecraftQuiltLoader.getEnvironmentType().equals(EnvType.CLIENT)) {
-                    ClientPlayNetworking.registerGlobalReceiver(type, (payload, context) -> {
-                        try {
-                            Minecraft.getInstance().execute(() -> c.onClientPacket(context.player(), payload));
-                        } catch (Exception e) {
-                            Voicechat.LOGGER.error("Failed to register packet receiver", e);
-                        }
-                    });
-                }
+            if (toClient && !CommonCompatibilityManager.INSTANCE.isDedicatedServer()) {
+                ClientPlayNetworking.registerGlobalReceiver(identifier, (client, handler, buf, responseSender) -> {
+                    try {
+                        T packet = packetType.getDeclaredConstructor().newInstance();
+                        packet.fromBytes(buf);
+                        client.execute(() -> c.onClientPacket(client, handler, packet));
+                    } catch (Exception e) {
+                        Voicechat.LOGGER.error("Failed to process packet", e);
+                    }
+                });
             }
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
         return c;
-    }
-
-    @Override
-    protected void sendToServerInternal(Packet<?> packet) {
-        ClientPlayNetworking.send(packet);
-    }
-
-    @Override
-    public void sendToClient(Packet<?> packet, ServerPlayer player) {
-        ServerPlayNetworking.send(player, packet);
     }
 
 }

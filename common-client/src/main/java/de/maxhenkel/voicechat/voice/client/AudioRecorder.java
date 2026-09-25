@@ -10,12 +10,10 @@ import de.maxhenkel.voicechat.natives.LameManager;
 import de.maxhenkel.voicechat.voice.common.AudioUtils;
 import de.maxhenkel.voicechat.voice.common.NamedThreadPoolFactory;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.User;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.*;
 import org.apache.commons.io.FileUtils;
 
 import javax.annotation.Nullable;
@@ -58,8 +56,7 @@ public class AudioRecorder {
         location.toFile().mkdirs();
         chunks = new ConcurrentHashMap<>();
         encoders = new ConcurrentHashMap<>();
-        User user = Minecraft.getInstance().getUser();
-        ownProfile = new GameProfile(user.getProfileId(), user.getName());
+        ownProfile = Minecraft.getInstance().getUser().getGameProfile();
 
         stereoFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, AudioUtils.SAMPLE_RATE, 16, 2, 4, AudioUtils.SAMPLE_RATE, false);
 
@@ -115,8 +112,8 @@ public class AudioRecorder {
 
     @Nullable
     private String lookupName(UUID uuid) {
-        if (uuid.equals(ownProfile.id())) {
-            return ownProfile.name();
+        if (uuid.equals(ownProfile.getId())) {
+            return ownProfile.getName();
         }
         return VoicechatClient.USERNAME_CACHE.getUsername(uuid);
     }
@@ -253,7 +250,7 @@ public class AudioRecorder {
 
     private void save() {
         threadPool.execute(() -> {
-            send(Component.translatable("message.voicechat.processing_recording_session"));
+            send(new TranslatableComponent("message.voicechat.processing_recording_session"));
             try {
                 Exception error = null;
                 sendProgress(0F);
@@ -279,23 +276,23 @@ public class AudioRecorder {
                     throw error;
                 }
                 sendProgress(1F);
-                send(Component.translatable("message.voicechat.save_session",
-                        Component.literal(location.normalize().toString())
+                send(new TranslatableComponent("message.voicechat.save_session",
+                        new TextComponent(location.normalize().toString())
                                 .withStyle(ChatFormatting.GRAY, ChatFormatting.UNDERLINE)
                                 .withStyle(style -> style
-                                        .withHoverEvent(new HoverEvent.ShowText(Component.translatable("message.voicechat.open_folder")))
-                                        .withClickEvent(new ClickEvent.OpenFile(location.normalize().toString()))))
+                                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TranslatableComponent("message.voicechat.open_folder")))
+                                        .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, location.normalize().toString()))))
                 );
             } catch (Exception e) {
                 Voicechat.LOGGER.error("Failed to save recording session", e);
-                send(Component.translatable("message.voicechat.save_session_failed", e.getMessage()));
+                send(new TranslatableComponent("message.voicechat.save_session_failed", e.getMessage()));
             }
         });
     }
 
     private void sendProgress(float progress) {
-        send(Component.translatable("message.voicechat.processing_progress",
-                Component.literal(String.valueOf((int) (progress * 100F)))
+        send(new TranslatableComponent("message.voicechat.processing_progress",
+                new TextComponent(String.valueOf((int) (progress * 100F)))
                         .withStyle(ChatFormatting.GRAY))
         );
     }
@@ -304,7 +301,7 @@ public class AudioRecorder {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player != null && mc.level != null) {
-            mc.execute(() -> ChatUtils.sendPlayerMessage(msg));
+            mc.execute(() -> player.sendMessage(msg, Util.NIL_UUID));
         } else {
             Voicechat.LOGGER.info("{}", msg.getString());
         }

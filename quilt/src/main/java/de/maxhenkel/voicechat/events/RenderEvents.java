@@ -1,27 +1,26 @@
 package de.maxhenkel.voicechat.events;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import de.maxhenkel.voicechat.intercompatibility.ClientCompatibilityManager;
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import org.quiltmc.qsl.base.api.event.Event;
 
 import java.util.function.Consumer;
 
 public class RenderEvents {
 
-    public static final Event<ClientCompatibilityManager.RenderNameplateEvent> RENDER_NAMEPLATE = EventFactory.createArrayBacked(ClientCompatibilityManager.RenderNameplateEvent.class, (listeners) -> (state, cameraRenderState, stack, collector) -> {
+    public static final Event<ClientCompatibilityManager.RenderNameplateEvent> RENDER_NAMEPLATE = Event.create(ClientCompatibilityManager.RenderNameplateEvent.class, (listeners) -> (entity, component, stack, vertexConsumers, light) -> {
         for (ClientCompatibilityManager.RenderNameplateEvent listener : listeners) {
-            listener.render(state, cameraRenderState, stack, collector);
+            listener.render(entity, component, stack, vertexConsumers, light);
         }
     });
 
-    public static final Event<Consumer<GuiGraphicsExtractor>> RENDER_HUD = EventFactory.createArrayBacked(Consumer.class, (listeners) -> (guiGraphics) -> {
-        for (Consumer<GuiGraphicsExtractor> listener : listeners) {
-            listener.accept(guiGraphics);
+    public static final Event<Consumer<PoseStack>> RENDER_HUD = Event.create(Consumer.class, (listeners) -> (poseStack) -> {
+        for (Consumer<PoseStack> listener : listeners) {
+            listener.accept(poseStack);
         }
     });
 
-    public static final Event<Runnable> RENDER_TICK = EventFactory.createArrayBacked(Runnable.class, (listeners) -> () -> {
+    public static final Event<Runnable> RENDER_TICK = Event.create(Runnable.class, (listeners) -> () -> {
         for (Runnable listener : listeners) {
             listener.run();
         }

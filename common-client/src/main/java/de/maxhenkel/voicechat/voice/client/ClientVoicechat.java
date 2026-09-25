@@ -12,7 +12,7 @@ import de.maxhenkel.voicechat.voice.common.SoundPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -188,13 +188,13 @@ public class ClientVoicechat {
         if (recording) {
             if (connection == null || !connection.getData().allowRecording()) {
                 if (player != null) {
-                    player.sendOverlayMessage(Component.translatable("message.voicechat.recording_disabled"));
+                    player.displayClientMessage(new TranslatableComponent("message.voicechat.recording_disabled"), true);
                 }
                 return false;
             }
             recorder = AudioRecorder.create();
             if (player != null) {
-                player.sendOverlayMessage(Component.translatable("message.voicechat.recording_started").withStyle(ChatFormatting.DARK_RED));
+                player.displayClientMessage(new TranslatableComponent("message.voicechat.recording_started").withStyle(ChatFormatting.DARK_RED), true);
             }
             return true;
         }
@@ -202,7 +202,7 @@ public class ClientVoicechat {
         AudioRecorder rec = recorder;
         recorder = null;
         if (player != null) {
-            player.sendOverlayMessage(Component.translatable("message.voicechat.recording_stopped").withStyle(ChatFormatting.DARK_RED));
+            player.displayClientMessage(new TranslatableComponent("message.voicechat.recording_stopped").withStyle(ChatFormatting.DARK_RED), true);
         }
         rec.saveAndClose();
         return true;

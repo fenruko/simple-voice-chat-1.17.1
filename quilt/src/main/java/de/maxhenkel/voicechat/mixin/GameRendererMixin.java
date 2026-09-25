@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class GameRendererMixin {
 
     @Inject(method = "render", at = @At("HEAD"))
-    private void render(CallbackInfo ci) {
+    private void render(float f, long l, boolean bl, CallbackInfo ci) {
         RenderEvents.RENDER_TICK.invoker().run();
     }
 
