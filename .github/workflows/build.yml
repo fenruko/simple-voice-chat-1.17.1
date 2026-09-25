@@ -33,6 +33,48 @@ jobs:
           set -o pipefail
           ./gradlew :fabric:build --stacktrace 2>&1 | tee build.log
 
+      - name: Smoke test dedicated server
+        run: |
+          set +e
+          mkdir -p fabric/run
+          printf 'eula=true\n' > fabric/run/eula.txt
+          timeout 360 ./gradlew :fabric:runServer > runserver.log 2>&1
+          rc=$?
+          set -e
+          if grep -q 'Done (' runserver.log; then
+            echo "Server booted successfully (Done marker found, rc=$rc)"
+            exit 0
+          fi
+          {
+            echo "===== runServer smoke test failed (rc=$rc) ====="
+            tail -n 200 runserver.log
+          } >> build.log
+          echo "::error title=runServer smoke test failed::See build.log"
+          exit 1
+
+      - name: Smoke test client
+        run: |
+          set +e
+          timeout 600 xvfb-run -a ./gradlew :fabric:runClient > runclient.log 2>&1
+          rc=$?
+          set -e
+          crashes=$(find fabric/run/crash-reports -type f 2>/dev/null | wc -l)
+          if [ "$rc" = "124" ] && [ "$crashes" = "0" ]; then
+            echo "Client alive after timeout with no crash reports - OK"
+            exit 0
+          fi
+          {
+            echo "===== runClient smoke test failed (rc=$rc, crash reports: $crashes) ====="
+            if [ "$crashes" != "0" ]; then
+              echo "--- crash reports ---"
+              find fabric/run/crash-reports -type f -exec sh -c 'echo "== $1 =="; cat "$1"' _ {} \;
+            fi
+            echo "--- log tail ---"
+            tail -n 250 runclient.log
+          } >> build.log
+          echo "::error title=runClient smoke test failed::See build.log"
+          exit 1
+
       - name: Publish build log on failure
         if: failure()
         run: |
