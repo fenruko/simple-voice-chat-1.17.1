@@ -9,11 +9,9 @@ import de.maxhenkel.voicechat.voice.client.ClientVoicechatConnection;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.Connection;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.repository.RepositorySource;
 
@@ -22,14 +20,11 @@ import java.util.function.Consumer;
 
 public class FabricClientCompatibilityManager extends ClientCompatibilityManager {
 
-    private static final ResourceLocation EARLY_JOIN = new ResourceLocation(Voicechat.MODID, "early_join");
-
     private static final Minecraft mc = Minecraft.getInstance();
 
     @Override
     public void onRenderNamePlate(RenderNameplateEvent onRenderNamePlate) {
         RenderEvents.RENDER_NAMEPLATE.register(onRenderNamePlate);
-        ClientPlayConnectionEvents.JOIN.addPhaseOrdering(EARLY_JOIN, Event.DEFAULT_PHASE);
     }
 
     @Override
@@ -104,8 +99,7 @@ public class FabricClientCompatibilityManager extends ClientCompatibilityManager
 
     @Override
     public void onJoinWorld(Runnable onJoinWorld) {
-        // Higher priority to prevent this from not firing in case another mod throws an exception in this event
-        ClientPlayConnectionEvents.JOIN.register(EARLY_JOIN, (handler, sender, client) -> onJoinWorld.run());
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> onJoinWorld.run());
     }
 
     @Override
