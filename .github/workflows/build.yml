@@ -33,6 +33,21 @@ jobs:
           set -o pipefail
           ./gradlew :fabric:build --stacktrace 2>&1 | tee build.log
 
+      - name: Diagnose fabric-loader versions
+        if: always()
+        run: |
+          set +e
+          {
+            echo "### fabric-loader dependency insight"
+            echo '```'
+            ./gradlew -q :fabric:dependencyInsight --configuration runtimeClasspath --dependency fabric-loader 2>&1 | tail -60
+            echo '```'
+            echo "### loom configs mentioning loader"
+            echo '```'
+            ./gradlew -q :fabric:dependencies --configuration runtimeClasspath 2>&1 | grep -i "fabric-loader" | head -20
+            echo '```'
+          } | tee -a build.log >> "$GITHUB_STEP_SUMMARY"
+
       - name: Smoke test dedicated server
         run: |
           set +e
