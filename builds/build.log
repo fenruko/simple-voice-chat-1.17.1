@@ -102,7 +102,7 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD SUCCESSFUL in 1m 56s
+BUILD SUCCESSFUL in 2m 10s
 20 actionable tasks: 20 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
 ===== runServer smoke test failed (rc=1) =====
@@ -118,12 +118,57 @@ Fabric Loom: 1.17.20
 > Configure project :fabric
 Fabric Loom: 1.17.20
 
+> Task :api:compileJava UP-TO-DATE
+> Task :api:processResources NO-SOURCE
+> Task :api:classes UP-TO-DATE
+> Task :api:jar UP-TO-DATE
+> Task :common:compileTemplateJava UP-TO-DATE
+> Task :common:processTemplateResources NO-SOURCE
+> Task :common:templateClasses UP-TO-DATE
+> Task :common:compileJava UP-TO-DATE
+> Task :common:processResources UP-TO-DATE
+> Task :common:classes UP-TO-DATE
+> Task :common:jar UP-TO-DATE
+> Task :common-client:compileJava UP-TO-DATE
+> Task :common-client:processResources UP-TO-DATE
+> Task :common-client:classes UP-TO-DATE
+> Task :common-client:jar UP-TO-DATE
+> Task :fabric:generateJava UP-TO-DATE
+> Task :fabric:api-stub:compileJava NO-SOURCE
+> Task :fabric:api-stub:processResources UP-TO-DATE
+> Task :fabric:api-stub:classes UP-TO-DATE
+> Task :fabric:api-stub:jar UP-TO-DATE
+
+> Task :fabric:compileJava
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :fabric:processResources UP-TO-DATE
+> Task :fabric:classes
+> Task :fabric:generateLog4jConfig
+> Task :fabric:generateRemapClasspath
+> Task :fabric:generateDLIConfig
+> Task :fabric:configureLaunch
+
+> Task :fabric:runServer FAILED
+Disabled sync chunk writes in run/server.properties
+Exception in thread "main" java.lang.ExceptionInInitializerError
+	at net.fabricmc.loader.impl.launch.knot.KnotServer.main(KnotServer.java:23)
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86)
+Caused by: java.lang.IllegalStateException: duplicate fabric loader classes found on classpath: jar:file:/home/runner/.gradle/caches/modules-2/files-2.1/net.fabricmc/fabric-loader/0.16.7/18ce52a3228434ba2aa8c1936728ef4eacad64b8/fabric-loader-0.16.7.jar!/net/fabricmc/loader/api/FabricLoader.class, jar:file:/home/runner/work/simple-voice-chat-1.17.1/simple-voice-chat-1.17.1/.gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-loader-293d29cc/0.13.1/fabric-loader-293d29cc-0.13.1.jar!/net/fabricmc/loader/api/FabricLoader.class
+	at net.fabricmc.loader.impl.util.LoaderUtil.verifyClasspath(LoaderUtil.java:75)
+	at net.fabricmc.loader.impl.launch.knot.Knot.<clinit>(Knot.java:345)
+	... 2 more
+
 [Incubating] Problems report is available at: file:///home/runner/work/simple-voice-chat-1.17.1/simple-voice-chat-1.17.1/build/reports/problems/problems-report.html
 
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Class org.gradle.jvm.toolchain.JvmVendorSpec does not have member field 'org.gradle.jvm.toolchain.JvmVendorSpec IBM_SEMERU'
+Execution failed for task ':fabric:runServer' (registered by plugin 'fabric-loom').
+> Process 'command '/home/runner/.gradle/jdks/eclipse_foundation-16-amd64-linux.2/bin/java'' finished with non-zero exit value 1
 
 * Try:
 > Run with --stacktrace option to get the stack trace.
@@ -137,4 +182,5 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD FAILED in 9s
+BUILD FAILED in 19s
+18 actionable tasks: 5 executed, 13 up-to-date
