@@ -79,6 +79,11 @@ shadowJar {
 configurations.named('runtimeClasspath') {
     exclude group: 'net.fabricmc', module: 'fabric-loader'
 }
+// Fabric Loader needs access-widener at runtime (MinecraftGameProvider); it was
+// previously supplied by the excluded plain loader tree.
+dependencies {
+    runtimeOnly "net.fabricmc:access-widener:2.1.0"
+}
 
 // This is to make the run tasks use Java 17, since Minecraft 1.18 does not run on newer versions
 tasks.named("runClient", JavaExec).configure {
