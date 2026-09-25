@@ -105,6 +105,45 @@ For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/comman
 BUILD SUCCESSFUL in 2m 10s
 20 actionable tasks: 20 executed
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.1/userguide/configuration_cache_enabling.html
+### fabric-loader dependency insight
+```
+net.fabricmc:fabric-loader:0.16.7
+  Variant runtime:
+    | Attribute Name                 | Provided     | Requested    |
+    |--------------------------------|--------------|--------------|
+    | org.gradle.status              | release      |              |
+    | org.gradle.category            | library      | library      |
+    | org.gradle.libraryelements     | jar          | jar          |
+    | org.gradle.usage               | java-runtime | java-runtime |
+    | org.gradle.dependency.bundling |              | external     |
+    | org.gradle.jvm.environment     |              | standard-jvm |
+    | org.gradle.jvm.version         |              | 16           |
+
+net.fabricmc:fabric-loader:0.16.7
+\--- runtimeClasspath
+
+remapped.net.fabricmc:fabric-loader-293d29cc:0.13.1
+  Variant runtime:
+    | Attribute Name                 | Provided     | Requested    |
+    |--------------------------------|--------------|--------------|
+    | org.gradle.status              | release      |              |
+    | org.gradle.category            | library      | library      |
+    | org.gradle.libraryelements     | jar          | jar          |
+    | org.gradle.usage               | java-runtime | java-runtime |
+    | org.gradle.dependency.bundling |              | external     |
+    | org.gradle.jvm.environment     |              | standard-jvm |
+    | org.gradle.jvm.version         |              | 16           |
+
+remapped.net.fabricmc:fabric-loader-293d29cc:0.13.1
+\--- runtimeClasspath
+
+A web-based, searchable dependency report is available by adding the --scan option.
+```
+### loom configs mentioning loader
+```
++--- net.fabricmc:fabric-loader:0.16.7
++--- remapped.net.fabricmc:fabric-loader-293d29cc:0.13.1
+```
 ===== runServer smoke test failed (rc=1) =====
 To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
 Daemon will be stopped at the end of the build 
@@ -182,5 +221,5 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 For more on this, please refer to https://docs.gradle.org/9.5.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
 
-BUILD FAILED in 19s
+BUILD FAILED in 17s
 18 actionable tasks: 5 executed, 13 up-to-date
