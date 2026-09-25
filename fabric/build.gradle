@@ -38,7 +38,13 @@ dependencies {
     }
     modCompileOnly "maven.modrinth:vanish:${vanish_version}"
 
-    modImplementation "me.lucko:fabric-permissions-api:${fabric_permission_api_version}"
+    // The permissions API POM imports fabric-api-bom (1.21.3-era) and a plain
+    // fabric-loader; the platform constraints would upgrade every fabric-api module
+    // and break dev-run mod resolution on 1.17.1. Keep only the API classes.
+    modImplementation("me.lucko:fabric-permissions-api:${fabric_permission_api_version}") {
+        exclude group: 'net.fabricmc.fabric-api'
+        exclude group: 'net.fabricmc', module: 'fabric-loader'
+    }
     modCompileOnly "com.viaversion:viaversion-common:${viaversion_version}"
 
     implementation "org.concentus:Concentus:${concentus_version}"
